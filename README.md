@@ -16,7 +16,6 @@ This project is a management dashboard for academic competitions, designed to he
 	- [Building for Production](#building-for-production)
 	- [Testing and Linting](#testing-and-linting)
 		- [Linting](#linting)
-		- [Testing](#testing)
 	- [Technology Stack](#technology-stack)
 		- [Core](#core)
 		- [UI \& Styling](#ui--styling)
@@ -146,12 +145,6 @@ Run ESLint to check code quality:
 ```bash
 npm run lint
 ```
-
-### Testing
-Currently, no automated test suite is configured. Consider adding:
-- Jest for unit testing
-- React Testing Library for component testing
-- Playwright or Cypress for E2E testing
 
 ## Technology Stack
 
