@@ -1,5 +1,5 @@
 import { apiRequest } from "@/libs/apiClient";
-import type { Competition } from "@/types/Competition";
+import type { Competition, CompetitionDetail } from "@/types/Competition";
 import type {
     CreateCompetitionRequest,
     InscribeGroupInCompetitionRequest,
@@ -68,6 +68,22 @@ class CompetitionService {
             data: data,
         });
 
+        return response.data;
+    }
+
+    static async getFinishedCompetitions() {
+        const response = await apiRequest<ServerSideResponse<Competition[]>>(
+            "/api/competition/finished",
+            { method: "GET" }
+        );
+        return response.data;
+    }
+
+    static async getCompetitionById(id: number) {
+        const response = await apiRequest<ServerSideResponse<CompetitionDetail>>(
+            `/api/competition/${id}`,
+            { method: "GET" }
+        );
         return response.data;
     }
 
