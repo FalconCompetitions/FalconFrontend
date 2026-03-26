@@ -16,8 +16,9 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
-import { Download, Check, X } from 'lucide-react';
+import { Download, Check, X, FileSearch } from 'lucide-react';
 import useManualCorrection from "./hooks/useManualCorrection";
+import { TableSkeleton } from "@/components/_ui/Skeleton/TableSkeleton";
 
 export default function ManualCorrection() {
   const {
@@ -36,6 +37,7 @@ export default function ManualCorrection() {
     handleOpenRejectDialog,
     handleCloseRejectDialog,
     handleConfirmReject,
+    isLoading,
   } = useManualCorrection();
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -92,6 +94,9 @@ export default function ManualCorrection() {
         Revise e avalie manualmente as submissões dos exercícios das equipes
       </Typography>
 
+      {isLoading ? (
+        <TableSkeleton columns={6} rows={5} />
+      ) : (
       <Paper
         sx={{
           width: "100%",
@@ -155,13 +160,34 @@ export default function ManualCorrection() {
                     colSpan={6}
                     align="center"
                     sx={{
-                      py: 8,
-                      fontSize: "16px",
-                      color: "#999",
+                      py: 10,
                       borderBottom: "1px solid rgba(0, 0, 0, 0.06)",
                     }}
                   >
-                    Não há dados de maratona disponíveis no momento
+                    <div style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}>
+                      <div style={{
+                        width: "64px",
+                        height: "64px",
+                        borderRadius: "50%",
+                        backgroundColor: "#e9edee",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}>
+                        <FileSearch size={32} color="#4F85A6" />
+                      </div>
+                      <Typography variant="subtitle1" sx={{ color: "#3f3c40", fontWeight: 600 }}>
+                        Nenhuma submissão pendente
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#4F85A6", maxWidth: 300 }}>
+                        As submissões que requerem correção manual aparecerão aqui.
+                      </Typography>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -354,6 +380,7 @@ export default function ManualCorrection() {
           }}
         />
       </Paper>
+      )}
 
       <Dialog
         open={selectedSubmission !== null}

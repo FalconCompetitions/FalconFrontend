@@ -182,16 +182,21 @@ const useEditExerciseModal = (
 
     const handleValidConfirm = useCallback(
         async (data: EditExerciseRequest) => {
-            if(pdfFile == null) {
-                return;
-            }
-
+            // Use the current form values, not the potentially stale exerciseState
             await saveEdit({
-                ...exerciseState,
-                pdfFile: pdfFile
+                id: exerciseState.id,
+                title: formValues.title,
+                exerciseTypeId: formValues.exerciseType,
+                description: formValues.description || "",
+                estimatedTime: exerciseState.estimatedTime,
+                judgeUuid: exerciseState.judgeUuid,
+                createdAt: exerciseState.createdAt,
+                inputs: exerciseState.inputs, // These are kept in sync by handleOnInputChange
+                outputs: exerciseState.outputs, // These are kept in sync by handleOnOutputChange
+                pdfFile: pdfFile || exerciseState.pdfFile, // Use existing file if no new file selected
             });
         },
-        [exerciseState, pdfFile, saveEdit]
+        [exerciseState, formValues, pdfFile, saveEdit]
     );
 
     const handleInvalidConfirm: SubmitErrorHandler<EditExerciseRequestFormValues> =

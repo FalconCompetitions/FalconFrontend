@@ -9,12 +9,13 @@ import GroupInfoSection from "./components/GroupInfoSection";
 import CompetitionHistorySection from "./components/CompetitionHistorySection";
 import ChampionTeamsSection from "./components/ChampionsTeamsSection";
 import { useUser } from "@/contexts/UserContext";
-import { Trophy, Users, ChevronLeft } from "lucide-react";
+import { formatDateWithoutTimezone } from "@/libs/utils";
+import { Trophy, Users, ChevronLeft } from 'lucide-react';
 import Modal from "@/components/_ui/Modal";
 import CompetitionInscription from "./components/CompetitionInscription";
 import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import { useCompetitionHub } from "@/contexts/CompetitionHubContext";
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
 
 interface ModalConfig {
     title: string;
@@ -72,28 +73,121 @@ const StudentDashboard: React.FC = () => {
     };
 
     const handleStartMarathonClick = () => {
-        if (ongoingCompetition?.isLoggedGroupInscribed) {
+        try {
+            // Use ongoingCompetition from CompetitionHub context for real-time data
+            if (!ongoingCompetition) {
+                showModal({
+                    title: "Aviso",
+                    bodyContent: (
+                        <p className="text-slate-600">
+                            Não há competição disponível no momento.
+                        </p>
+                    ),
+                    hasConfirmButton: true,
+                    confirmButtonContent: "OK",
+                    onConfirm: closeModal,
+                });
+                return;
+            }
+
+            const now = new Date();
+            
+            // Safely parse dates with validation
+            let startInscriptions: Date | null = null;
+            let endInscriptions: Date | null = null;
+            let startTime: Date | null = null;
+            
+            if (ongoingCompetition.startInscriptions) {
+                const parsedStart = new Date(ongoingCompetition.startInscriptions);
+                startInscriptions = isNaN(parsedStart.getTime()) ? null : parsedStart;
+            }
+            
+            if (ongoingCompetition.endInscriptions) {
+                const parsedEnd = new Date(ongoingCompetition.endInscriptions);
+                endInscriptions = isNaN(parsedEnd.getTime()) ? null : parsedEnd;
+            }
+
+            if (ongoingCompetition.startTime) {
+                const parsedStartTime = new Date(ongoingCompetition.startTime);
+                startTime = isNaN(parsedStartTime.getTime()) ? null : parsedStartTime;
+            }
+            
+            // Check if competition has started
+            const hasCompetitionStarted = startTime && now >= startTime;
+
+            // Check if user's group is inscribed
+            const isGroupInscribed = ongoingCompetition.isLoggedGroupInscribed;
+
+            if (!isGroupInscribed) {
+                // Check if inscription period is still open
+                const isInscriptionPeriodOpen = startInscriptions && 
+                                               endInscriptions && 
+                                               now >= startInscriptions && 
+                                               now <= endInscriptions;
+
+                if (isInscriptionPeriodOpen) {
+                    showModal({
+                        title: "Inscrição Necessária",
+                        bodyContent: (
+                            <p className="text-slate-600">
+                                Você precisa se inscrever na maratona antes de participar.
+                                Clique em &quot;Realizar Inscrição&quot; para se inscrever.
+                            </p>
+                        ),
+                        hasConfirmButton: true,
+                        confirmButtonContent: "OK",
+                        onConfirm: () => {
+                            closeModal();
+                            toggleMenu("inscription");
+                        },
+                    });
+                } else {
+                    showModal({
+                        title: "Aviso",
+                        bodyContent: (
+                            <p className="text-slate-600">
+                                O período de inscrições foi encerrado e você não está inscrito nesta competição.
+                            </p>
+                        ),
+                        hasConfirmButton: true,
+                        confirmButtonContent: "OK",
+                        onConfirm: closeModal,
+                    });
+                }
+                return;
+            }
+
+            // User is inscribed - check if competition has started
+            if (!hasCompetitionStarted) {
+                const startTimeFormatted = startTime 
+                    ? formatDateWithoutTimezone(startTime.toISOString()) 
+                    : "em breve";
+                    
+                showModal({
+                    title: "Competição Não Iniciada",
+                    bodyContent: (
+                        <p className="text-slate-600">
+                            A competição ainda não começou. O início está agendado para {startTimeFormatted}.
+                        </p>
+                    ),
+                    hasConfirmButton: true,
+                    confirmButtonContent: "OK",
+                    onConfirm: closeModal,
+                });
+                return;
+            }
+
+            // All checks passed - redirect to competition
+            router.push("/Competition");
+            
+        } catch (error) {
+            console.error("Error processing competition dates:", error);
             showModal({
-                title: "Iniciando Maratona",
+                title: "Erro",
                 bodyContent: (
                     <p className="text-slate-600">
-                        Boa sorte! A maratona está começando.
-                    </p>
-                ),
-                hasConfirmButton: true,
-                confirmButtonContent: "Entendido",
-                onConfirm: closeModal,
-            });
-            setTimeout(() => {
-                router.push(`/Competition`);
-            }, 1000);
-        } else {
-            showModal({
-                title: "Aviso",
-                bodyContent: (
-                    <p className="text-slate-600">
-                        Você precisa se inscrever na maratona antes de
-                        iniciá-la.
+                        Não foi possível verificar o status da competição.
+                        Por favor, tente novamente.
                     </p>
                 ),
                 hasConfirmButton: true,

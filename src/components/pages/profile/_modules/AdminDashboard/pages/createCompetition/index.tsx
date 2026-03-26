@@ -404,7 +404,9 @@ const CreateCompetition: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-lg text-[#4F85A6]">Data:</span>
                         <span className="text-lg text-[#3f3c40] font-medium">
-                          {formValues.startDate || "Não definida"}
+                          {formValues.startDate 
+                            ? formValues.startDate.split('-').reverse().join('/')
+                            : "Não definida"}
                         </span>
                       </div>
 

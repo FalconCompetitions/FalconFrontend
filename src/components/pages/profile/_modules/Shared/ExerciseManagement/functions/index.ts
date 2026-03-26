@@ -1,10 +1,11 @@
-import { toBase64 } from "@/libs/utils";
-import { ExerciseInput, ExerciseOutput } from "@/types/Exercise";
+import { fromBase64, toBase64 } from "@/libs/utils";
+import { Exercise, ExerciseInput, ExerciseOutput } from "@/types/Exercise";
 import {
     CreateExerciseInputRequest,
     CreateExerciseOutputRequest,
     EditExerciseInputRequest,
     EditExerciseOutputRequest,
+    EditExerciseRequest,
 } from "@/types/Exercise/Requests";
 
 /**
@@ -53,25 +54,63 @@ export const processCreateExerciseValues = (
  * @param outputValues - An array of `ExerciseOutput` objects representing the exercise outputs to process.
  * @returns An object containing two arrays: `inputs` (formatted as `EditExerciseInputRequest`) and `outputs` (formatted as `EditExerciseOutputRequest`).
  */
-export const processEditExerciseValues = (
-    inputValues: ExerciseInput[],
-    outputValues: ExerciseOutput[]
+export const getExerciseValues = (
+    exercise: Exercise
 ) => {
-    const inputs = inputValues.map((x, idx) => {
+    const inputs = exercise.inputs.map((x, idx) => {
 
         return {
             id: x.id,
             exerciseId: x.exerciseId,
+            judgeUuid: x.judgeUuid,
+            orderId: idx,
+            input: fromBase64(x.input)
+        } satisfies EditExerciseInputRequest;
+    });
+
+    const outputs = exercise.outputs.map((x, idx) => {
+
+        return {
+            id: x.id,
+            exerciseId: x.exerciseId,
+            judgeUuid: x.judgeUuid,
+            exerciseInputId: x.exerciseInputId,
+            orderId: idx,
+            output: fromBase64(x.output)
+        } satisfies EditExerciseOutputRequest;
+    });
+
+    return { inputs, outputs };
+};
+
+/**
+ * Processes arrays of exercise input and output values, converting their data to base64 and formatting them
+ * into request objects suitable for editing exercises.
+ *
+ * @param inputValues - An array of `ExerciseInput` objects representing the exercise inputs to process.
+ * @param outputValues - An array of `ExerciseOutput` objects representing the exercise outputs to process.
+ * @returns An object containing two arrays: `inputs` (formatted as `EditExerciseInputRequest`) and `outputs` (formatted as `EditExerciseOutputRequest`).
+ */
+export const processExerciseToEdit = (
+    exercise: EditExerciseRequest
+) => {
+    const inputs = exercise.inputs.map((x, idx) => {
+
+        return {
+            id: x.id,
+            exerciseId: x.exerciseId,
+            judgeUuid: x.judgeUuid,
             orderId: idx,
             input: toBase64(x.input)
         } satisfies EditExerciseInputRequest;
     });
 
-    const outputs = outputValues.map((x, idx) => {
+    const outputs = exercise.outputs.map((x, idx) => {
 
         return {
             id: x.id,
             exerciseId: x.exerciseId,
+            judgeUuid: x.judgeUuid,
             exerciseInputId: x.exerciseInputId,
             orderId: idx,
             output: toBase64(x.output)
@@ -80,5 +119,3 @@ export const processEditExerciseValues = (
 
     return { inputs, outputs };
 };
-
-

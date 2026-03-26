@@ -19,8 +19,16 @@ export interface LogResponse {
 
     /**
      * Type of action logged (enum value).
+     * 0=UserAction, 1=SystemAction, 2=Login, 3=Logout, 4=SubmittedExercise,
+     * 5=GroupBlockedInCompetition, 6=GroupUnblockedInCompetition, 7=QuestionSent,
+     * 8=AnswerGiven, 9=CompetitionUpdated, 10=CompetitionFinished
      */
     actionType: number;
+
+    /**
+     * Human-readable description of the action.
+     */
+    actionDescription: string;
 
     /**
      * Timestamp when the action occurred (ISO 8601).
@@ -38,9 +46,19 @@ export interface LogResponse {
     userId?: string | null;
 
     /**
+     * Name of the user who performed the action.
+     */
+    userName?: string | null;
+
+    /**
      * Group ID (if applicable).
      */
     groupId?: number | null;
+
+    /**
+     * Name of the group associated with the action.
+     */
+    groupName?: string | null;
 
     /**
      * Competition ID (if applicable).

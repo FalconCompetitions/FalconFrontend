@@ -109,6 +109,11 @@ const TeachersTable: FC = () => {
                             </CardTitle>
                             <CardDescription className="text-xl text-[#4F85A6]">
                                 Lista completa de professores cadastrados
+                                {selectedUsers.length > 0 && (
+                                    <span className="ml-2 px-2 py-0.5 bg-[#4F85A6] text-white text-sm rounded-full">
+                                        {selectedUsers.length} selecionado{selectedUsers.length > 1 ? 's' : ''}
+                                    </span>
+                                )}
                             </CardDescription>
                         </div>
                         <ButtonAdm
@@ -181,7 +186,11 @@ const TeachersTable: FC = () => {
                                     {users.map((user) => (
                                         <TableRow
                                             key={user.id}
-                                            className="hover:bg-[#e9edee] hover:bg-opacity-50"
+                                            className={`transition-colors ${
+                                                selectedUsers.includes(user.id)
+                                                    ? "bg-[#9abbd6]/20 border-l-4 border-l-[#4F85A6] hover:bg-[#9abbd6]/30"
+                                                    : "hover:bg-[#e9edee] hover:bg-opacity-50"
+                                            }`}
                                         >
                                             <TableCell>
                                                 <Checkbox
@@ -283,8 +292,19 @@ const TeachersTable: FC = () => {
                     )}
 
                     {users.length === 0 && !loadingUsers && (
-                        <div className="p-6 text-center text-[#3f3c40]">
-                            Nenhum professor encontrado.
+                        <div className="flex flex-col items-center justify-center p-12 text-center">
+                            <div className="w-16 h-16 mb-4 rounded-full bg-[#e9edee] flex items-center justify-center">
+                                <Search className="w-8 h-8 text-[#4F85A6]" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-[#3f3c40] mb-2">
+                                Nenhum professor encontrado
+                            </h3>
+                            <p className="text-sm text-[#4F85A6] max-w-sm">
+                                {searchTerm 
+                                    ? `Não encontramos resultados para "${searchTerm}". Tente ajustar sua busca.`
+                                    : "Não há professores cadastrados no momento."
+                                }
+                            </p>
                         </div>
                     )}
                 </CardContent>

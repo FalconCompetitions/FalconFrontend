@@ -49,3 +49,18 @@ export interface ExerciseSubmissionResponse {
     accepted: boolean;
     judgeResponse: JudgeResponseEnum;
 }
+/**
+ * Represents a champion team from a competition.
+ */
+export interface ChampionTeamResponse {
+    /** The year of the competition. */
+    year: number;
+    /** The name of the champion team. */
+    teamName: string;
+    /** The competition ID. */
+    competitionId: number;
+    /** The competition name. */
+    competitionName: string;
+    /** The total points scored by the team. */
+    points: number;
+}

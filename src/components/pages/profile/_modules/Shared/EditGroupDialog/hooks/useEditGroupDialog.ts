@@ -50,11 +50,9 @@ const useEditGroupDialog = ({
             });
         } catch (err: any) {
             setError(err?.message || "Erro ao atualizar grupo.");
-        } finally {
             setLoading(false);
-            toggleDialog();
         }
-    }, [editGroupFormValues, onConfirm, toggleDialog, group.id]);
+    }, [editGroupFormValues, onConfirm, group.id]);
 
     return {
         loading,

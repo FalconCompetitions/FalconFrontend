@@ -95,11 +95,14 @@ export default function useGroupsTable() {
             for (const id of selectedGroups) {
                 await deleteGroup(id);
             }
-            enqueueSnackbar("Grupos excluídos com sucesso!", {
-                variant: "success",
-            });
             setSelectedGroups([]);
             await loadGroups(searchTerm);
+            const message = selectedGroups.length === 1 
+                ? "Grupo excluído com sucesso!" 
+                : `${selectedGroups.length} grupos excluídos com sucesso!`;
+            enqueueSnackbar(message, {
+                variant: "success",
+            });
         } catch {
             enqueueSnackbar("Falha ao excluir grupos selecionados.", {
                 variant: "error",
@@ -119,11 +122,11 @@ export default function useGroupsTable() {
             const action = async (id: number) => {
                 try {
                     await deleteGroup(id);
+                    toggleDeleteDialog();
+                    await loadGroups(searchTerm);
                     enqueueSnackbar("Grupo excluído com sucesso!", {
                         variant: "success",
                     });
-                    toggleDeleteDialog();
-                    await loadGroups(searchTerm);
                 } catch {
                     enqueueSnackbar("Falha ao excluir o grupo.", {
                         variant: "error",
@@ -156,11 +159,11 @@ export default function useGroupsTable() {
                         try {
                             await GroupService.UpdateGroup(groupId, request);
                             await updateGroup(groupId, request.name);
+                            toggleEditDialog();
+                            await loadGroups(searchTerm);
                             enqueueSnackbar("Grupo atualizado com sucesso!", {
                                 variant: "success",
                             });
-                            toggleEditDialog();
-                            await loadGroups(searchTerm);
                         } catch {
                             enqueueSnackbar("Falha ao atualizar o grupo.", {
                                 variant: "error",

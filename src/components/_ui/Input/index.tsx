@@ -27,11 +27,15 @@ const Input: React.FC<InputProps> = ({
   loading,
   ...otherProps
 }) => {
+  const inputId = id || name || `input-${Math.random().toString(36).substr(2, 9)}`;
+  const errorId = error ? `${inputId}-error` : undefined;
+
   return (
     <div className={`relative ${error ? "mb-4" : ""} ${containerClassName || ""}`}>
       {label && (
-        <label htmlFor={id || name} className="block text-gray-700 mb-1">
+        <label htmlFor={inputId} className="block text-gray-700 mb-1">
           {label}
+          {required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
         </label>
       )}
       <div
@@ -43,7 +47,7 @@ const Input: React.FC<InputProps> = ({
       >
         {icon && <div className="ml-2">{icon}</div>}
         <input
-          id={id || name}
+          id={inputId}
           className={`flex-1 w-full p-3 outline-none bg-transparent rounded-lg ${className || ""}`}
           type={type}
           placeholder={placeholder}
@@ -57,6 +61,8 @@ const Input: React.FC<InputProps> = ({
           autoComplete={autocomplete}
           min={min}
           max={max}
+          aria-invalid={error ? "true" : "false"}
+          aria-describedby={errorId}
           {...otherProps}
         />
         {loading && (
@@ -66,7 +72,15 @@ const Input: React.FC<InputProps> = ({
         )}
         
       </div>
-      {error && <span className="absolute -bottom-6 left-0 text-red-700 text-sm">{error.message}</span>}
+      {error && (
+        <span 
+          id={errorId}
+          className="absolute -bottom-6 left-0 text-red-700 text-sm"
+          role="alert"
+        >
+          {error.message}
+        </span>
+      )}
     </div>
   )
 }

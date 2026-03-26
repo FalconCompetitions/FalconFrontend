@@ -25,6 +25,7 @@ import {
 import FileService from "@/services/FileService"
 import { downloadBlobFile } from "@/libs/utils"
 import { useSnackbar } from "notistack"
+import { useUser } from "@/contexts/UserContext"
 
 const ExerciseManagement: React.FC = () => {
   const {
@@ -57,18 +58,19 @@ const ExerciseManagement: React.FC = () => {
     loadingExercises,
   } = useExerciseManagement()
 
-  const { enqueueSnackbar } = useSnackbar()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { enqueueSnackbar } = useSnackbar();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
-  const totalPages = Math.ceil(exercises.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const currentExercises = exercises.slice(startIndex, startIndex + itemsPerPage)
+  const { user } = useUser();
 
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
-  const [exerciseToDelete, setExerciseToDelete] = useState<number | null>(null)
-  const [duplicateError, setDuplicateError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(exercises.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentExercises = exercises.slice(startIndex, startIndex + itemsPerPage);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState<number | null>(null);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   const exerciseTypeLabel = useMemo(() => {
     return exerciseTypeOptions.find((option) => option.value === exerciseTypeFilter)?.label ?? "Todos"
@@ -96,18 +98,21 @@ const ExerciseManagement: React.FC = () => {
 
   const handleViewPdf = async (fileId: number) => {
     try {
-      const file = await FileService.downloadFile(fileId);
+      const file = await FileService.downloadFile(fileId, user?.token || "");
       
-	  downloadBlobFile(fileId, file.blob, file.contentDisposition);
-    } catch (error) {
-	  console.error("Erro ao baixar o arquivo PDF:", error);
-	  enqueueSnackbar("Nenhum PDF disponível para este exercício", {
+      downloadBlobFile(fileId, file.blob, file.contentDisposition);
+    } catch (error: any) {
+      console.error("Erro ao baixar o arquivo PDF:", error);
+      
+      const errorMessage = error?.response?.data?.Message || 
+                          error?.message || 
+                          "Erro ao baixar o arquivo PDF";
+      
+      enqueueSnackbar(errorMessage, {
         variant: "error",
         anchorOrigin: { vertical: "bottom", horizontal: "right" }
-      })
-	}
-    
-
+      });
+    }
   }
 
   return (

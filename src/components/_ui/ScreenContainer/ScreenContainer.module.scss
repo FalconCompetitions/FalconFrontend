@@ -1,5 +1,6 @@
 .screenContainer {
-    @apply flex;
+    @apply flex flex-col lg:flex-row;
 
+    min-height: 100vh;
     height: 100%;
 }

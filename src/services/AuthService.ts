@@ -44,6 +44,12 @@ class AuthService {
         return response.data;
     }
 
+    /**
+     * Performs user authentication with the provided credentials.
+     *
+     * @param payload - Object containing the user's RA and password for authentication.
+     * @returns A promise that resolves to the server response containing the authenticated user data and token.
+     */
     static async loginUser(payload: LoginUserRequest) {
         const response = await apiRequest<
             ServerSideResponse<LoginUserResponse>
@@ -55,6 +61,11 @@ class AuthService {
         return response.data;
     }
 
+    /**
+     * Logs out the current user by invalidating their session.
+     *
+     * @returns A promise that resolves to the server response confirming the logout.
+     */
     static async logoutUser() {
         const req = await fetch("/api/auth/logout", {
             method: "GET",

@@ -93,6 +93,11 @@ const GroupsTable: FC = () => {
                             </CardTitle>
                             <CardDescription className="text-xl text-[#4F85A6]">
                                 Lista completa de grupos cadastrados
+                                {selectedGroups.length > 0 && (
+                                    <span className="ml-2 px-2 py-0.5 bg-[#4F85A6] text-white text-sm rounded-full">
+                                        {selectedGroups.length} selecionado{selectedGroups.length > 1 ? 's' : ''}
+                                    </span>
+                                )}
                             </CardDescription>
                         </div>
                         <Button
@@ -170,7 +175,11 @@ const GroupsTable: FC = () => {
                                     {groups.map((group) => (
                                         <TableRow
                                             key={group.id}
-                                            className="hover:bg-[#e9edee] hover:bg-opacity-50"
+                                            className={`transition-colors ${
+                                                selectedGroups.includes(group.id)
+                                                    ? "bg-[#9abbd6]/20 border-l-4 border-l-[#4F85A6] hover:bg-[#9abbd6]/30"
+                                                    : "hover:bg-[#e9edee] hover:bg-opacity-50"
+                                            }`}
                                         >
                                             <TableCell>
                                                 <Checkbox
@@ -213,9 +222,10 @@ const GroupsTable: FC = () => {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-base text-[#3f3c40]">
-                                                {new Date(
-                                                    group.lastCompetition
-                                                ).toLocaleDateString()}
+                                                {group.lastCompetition 
+                                                    ? new Date(group.lastCompetition).toLocaleDateString("pt-BR")
+                                                    : "Sem competições"
+                                                }
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
@@ -272,8 +282,19 @@ const GroupsTable: FC = () => {
                     )}
 
                     {groups.length === 0 && !loadingGroups && (
-                        <div className="p-6 text-center text-[#3f3c40]">
-                            Nenhum grupo encontrado.
+                        <div className="flex flex-col items-center justify-center p-12 text-center">
+                            <div className="w-16 h-16 mb-4 rounded-full bg-[#e9edee] flex items-center justify-center">
+                                <Search className="w-8 h-8 text-[#4F85A6]" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-[#3f3c40] mb-2">
+                                Nenhum grupo encontrado
+                            </h3>
+                            <p className="text-sm text-[#4F85A6] max-w-sm">
+                                {searchTerm 
+                                    ? `Não encontramos resultados para "${searchTerm}". Tente ajustar sua busca.`
+                                    : "Não há grupos cadastrados no momento."
+                                }
+                            </p>
                         </div>
                     )}
                 </CardContent>

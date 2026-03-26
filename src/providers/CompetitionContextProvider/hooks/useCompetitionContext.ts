@@ -45,7 +45,7 @@ const useCompetitionContext = () => {
                             ? new Date(res.data!.blockSubmissions)
                             : null,
                         duration: res.data?.duration
-                            ? convertTimeSpanToNumber(res.data!.duration)
+                            ? Math.floor(convertTimeSpanToNumber(res.data!.duration) / 60)
                             : null,
                         endInscriptions: res.data?.endInscriptions
                             ? new Date(res.data!.endInscriptions)
@@ -58,11 +58,7 @@ const useCompetitionContext = () => {
                         name: res.data!.name,
                         description: res.data?.description || "",
                         startInscriptions: res.data?.startInscriptions
-                            ? new Date(
-                                  convertTimeSpanToNumber(
-                                      res.data!.startInscriptions
-                                  )
-                              )
+                            ? new Date(res.data!.startInscriptions)
                             : null,
                         startTime: new Date(res.data!.startTime),
                         status: res.data!.status,
@@ -70,14 +66,16 @@ const useCompetitionContext = () => {
                             ? new Date(res.data!.stopRanking)
                             : null,
                         submissionPenalty: res.data?.submissionPenalty
-                            ? convertTimeSpanToNumber(
+                            ? Math.floor(convertTimeSpanToNumber(
                                   res.data!.submissionPenalty
-                              )
+                              ) / 60)
                             : 0,
                         maxMembers: res.data!.maxMembers,
                         exercises: [],
                         groups: [],
                         competitionRankings: [],
+                        logs: [],
+                        questions: [],
                     });
 
                     enqueueSnackbar(

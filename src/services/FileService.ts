@@ -56,7 +56,7 @@ class FileService {
      * const filename = parseFilenameFromContentDisposition(contentDisposition) ?? "download";
      * triggerBrowserDownload(url, filename);
      */
-    static async downloadFile(fileId: number): Promise<{
+    static async downloadFile(fileId: number, token: string): Promise<{
         blob: Blob;
         contentDisposition: string;
     }> {
@@ -65,17 +65,18 @@ class FileService {
             {
                 method: "GET",
                 responseType: "blob",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "*/*"
+                }
             }
         );
 
-        const contentDispositionValue = response.headers && 
-            typeof response.headers.get === 'function' 
-            ? response.headers.get("content-disposition") 
-            : null;
-        
-        const contentDisposition: string = typeof contentDispositionValue === 'string' 
-            ? contentDispositionValue 
-            : "";
+        // Axios returns headers as an object, not a Map with .get()
+        const contentDisposition: string = 
+            response.headers?.["content-disposition"] || 
+            response.headers?.["Content-Disposition"] || 
+            "";
 
         return {
             blob: response.data,

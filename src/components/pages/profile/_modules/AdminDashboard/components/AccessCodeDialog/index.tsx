@@ -8,10 +8,11 @@ import {
     DialogTitle,
 } from "@/components/_ui/Dialog";
 import Input from "@/components/_ui/Input";
-import { Edit } from "lucide-react";
+import { Edit, Copy, Check } from "lucide-react";
 import React, { useEffect } from "react";
 import useAccessCodeDialog from "./hooks/useAccessCodeDialog";
 import Button from "@/components/_ui/Button";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 interface AccessCodeDialogProps {
     isOpen: boolean;
@@ -30,9 +31,17 @@ const AccessCodeDialog: React.FC<AccessCodeDialogProps> = ({
         refreshToken,
     } = useAccessCodeDialog();
 
+    const { copied, copyToClipboard } = useCopyToClipboard();
+
     useEffect(() => {
         fetchToken();
     }, [fetchToken]);
+
+    const handleCopy = () => {
+        if (token) {
+            copyToClipboard(token);
+        }
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -50,21 +59,43 @@ const AccessCodeDialog: React.FC<AccessCodeDialogProps> = ({
                     <label className="text-lg font-medium text-[#126396] block mb-2">
                         Código de Acesso
                     </label>
-                    <div className="flex items-center w-full gap-4">
-                        <Input
-                            name="teacherCode"
-                            type="text"
-                            value={token ?? ""}
-                            readOnly
-                            placeholder="Código gerado"
-                            className="flex-1 border-[#e9edee] focus:border-[#4F85A6] focus:ring-[#4F85A6] text-base"
-                            containerClassName="flex-1"
-                            loading={isLoading}
-                        />
+                    <div className="flex items-center w-full gap-3">
+                        <div className="flex-1 relative">
+                            <Input
+                                name="teacherCode"
+                                type="text"
+                                value={token ?? ""}
+                                readOnly
+                                placeholder="Código gerado"
+                                className="flex-1 border-[#e9edee] focus:border-[#4F85A6] focus:ring-[#4F85A6] text-base pr-12"
+                                containerClassName="flex-1"
+                                loading={isLoading}
+                            />
+                            {token && (
+                                <div 
+                                    className="absolute right-3 top-1/2 -translate-y-1/2" 
+                                    title={copied ? "Copiado!" : "Copiar código"}
+                                >
+                                    <Button
+                                        onClick={handleCopy}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="p-1.5 h-auto min-w-0 hover:bg-[#e9edee]"
+                                    >
+                                        {copied ? (
+                                            <Check className="w-4 h-4 text-green-600" />
+                                        ) : (
+                                            <Copy className="w-4 h-4 text-[#4F85A6]" />
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                         <Button
                             onClick={refreshToken}
                             variant="primary"
                             rounded
+                            className="whitespace-nowrap"
                         >
                             Gerar código
                         </Button>

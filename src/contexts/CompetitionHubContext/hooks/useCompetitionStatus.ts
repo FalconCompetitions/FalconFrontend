@@ -85,6 +85,7 @@ export const useCompetitionStatus = () => {
 
     /**
      * Periodic health check (ping every 30 seconds).
+     * Also validates competition data is still valid.
      */
     useEffect(() => {
         if (!isConnected) return;

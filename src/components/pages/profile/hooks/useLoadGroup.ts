@@ -31,7 +31,7 @@ const useLoadGroups = () => {
             try {
                 const controller = new AbortController();
                 setControllerSignal(controller);
-                const res = await GroupService.GetGroups(
+                const res = await GroupService.GetGroupsWithSignal(
                     currentPage,
                     itemsPerPage,
                     term,
@@ -48,7 +48,7 @@ const useLoadGroups = () => {
                     name: group.name,
                     members: group.users?.length || 0,
                     status: group.users && group.users.length > 0 ? 'active' : 'inactive',
-                    lastCompetition: new Date().toISOString(),
+                    lastCompetition: group.lastCompetitionDate || new Date().toISOString(),
                 }));
 
                 setGroups(mappedGroups);
@@ -70,15 +70,19 @@ const useLoadGroups = () => {
     }, [loadGroups, searchTerm]);
 
     const deleteGroup = async (groupId: number) => {
+        const response = await GroupService.deleteGroup(groupId);
+        
+        if (response.status !== 200) {
+            // @ts-expect-error : Irrelevant
+            throw new Error(response.data?.message || "Falha ao excluir o grupo.");
+        }
+        
+        // Remove da lista local apenas se a exclusão no backend foi bem-sucedida
         setGroups((prev) => prev.filter((g) => g.id !== groupId));
-        enqueueSnackbar("Grupo deletado com sucesso!", { variant: "success" });
     };
 
     const updateGroup = async (groupId: number, name: string) => {
         setGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, name } : g)));
-        enqueueSnackbar("Grupo atualizado com sucesso!", {
-            variant: "success",
-        });
     };
 
     const togglePage = (page: number) => setCurrentPage(page);

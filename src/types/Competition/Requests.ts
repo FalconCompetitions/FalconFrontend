@@ -46,9 +46,18 @@ export interface UpdateCompetitionRequest
     id: number;
 }
 
-
+/**
+ * Represents the request to enroll a group in a competition.
+ */
 export interface InscribeGroupInCompetitionRequest {
+    /**
+     * The unique identifier of the competition to join.
+     */
     competitionId: number;
+
+    /**
+     * The unique identifier of the group to enroll.
+     */
     groupId: number;
 }
 
@@ -63,9 +72,22 @@ export type LanguageType =
     | 6 // C++
     | 7 // PHP;
 
-
+/**
+ * Represents a group's attempt to solve an exercise during a competition.
+ */
 export interface GroupExerciseAttemptRequest {
+    /**
+     * The unique identifier of the exercise being attempted.
+     */
     exerciseId: number;
+
+    /**
+     * The programming language used for the submission.
+     */
     languageType: LanguageType;
+
+    /**
+     * The source code submitted for evaluation.
+     */
     code: string;
 }

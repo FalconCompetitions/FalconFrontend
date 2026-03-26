@@ -9,6 +9,7 @@ import {
 import useLoadExercises from "./useLoadExercises";
 import {
     processCreateExerciseValues,
+    processExerciseToEdit,
 } from "../functions";
 import { useSnackbar } from "notistack";
 
@@ -152,7 +153,8 @@ export const useExerciseManagement = () => {
 
     const startEdit = useCallback(
         (exercise: Exercise) => {
-            setEditingExercise({ ...exercise });
+            // Exercises are already decoded in the list, no need to decode again
+            setEditingExercise(exercise);
             toggleEditExerciseModal();
         },
         [toggleEditExerciseModal]
@@ -160,21 +162,28 @@ export const useExerciseManagement = () => {
 
     const saveEdit = useCallback(
         async (exercise: EditExerciseRequest) => {
-            if (!editingExercise || editingExercise.id == -1 || updatePdfFile == null) return;
+            if (!editingExercise || editingExercise.id == -1) return;
+
+            const { inputs, outputs } = processExerciseToEdit(exercise);
+
+            // Use updatePdfFile if provided, otherwise use the existing PDF file from exercise
+            const pdfToUse = updatePdfFile || exercise.pdfFile;
 
             await updateExercise(exercise.id, {
                 id: exercise.id,
                 description: exercise.description,
                 judgeUuid: exercise.judgeUuid!,
-                inputs: exercise.inputs,
-                outputs: exercise.outputs,
+                inputs: inputs,
+                outputs: outputs,
                 exerciseTypeId: exercise.exerciseTypeId,
                 title: exercise.title,
                 createdAt: exercise.createdAt,
                 estimatedTime: exercise.estimatedTime,
-                pdfFile: updatePdfFile
+                pdfFile: pdfToUse
             });
 
+            // Reset the update file after saving
+            setUpdatePdfFile(null);
             toggleEditExerciseModal();
         },
         [editingExercise, updatePdfFile, toggleEditExerciseModal, updateExercise]

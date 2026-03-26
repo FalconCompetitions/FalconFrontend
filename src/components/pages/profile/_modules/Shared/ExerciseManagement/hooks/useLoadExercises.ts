@@ -82,7 +82,21 @@ const useLoadExercises = () => {
                     return;
                 }
                 const data = response.data!;
-                setExercises((prev) => [...prev, data]);
+                
+                // Decode Base64 inputs and outputs like we do in loadExercises
+                const decodedExercise = {
+                    ...data,
+                    inputs: data.inputs.map((input) => ({
+                        ...input,
+                        input: fromBase64(input.input),
+                    })),
+                    outputs: data.outputs.map((output) => ({
+                        ...output,
+                        output: fromBase64(output.output),
+                    })),
+                };
+                
+                setExercises((prev) => [...prev, decodedExercise]);
 
                 enqueueSnackbar("Exercício criado com sucesso!", {
                     variant: "success",
@@ -110,7 +124,7 @@ const useLoadExercises = () => {
                 const controller = new AbortController();
                 setControllerSignal(controller);
 
-                const response = await ExerciseService.getExercises(
+                const response = await ExerciseService.getExercisesWithSignal(
                     currentPage,
                     10,
                     searchTerm,
@@ -152,12 +166,14 @@ const useLoadExercises = () => {
 
     const deleteExercise = useCallback(
         async (id: number) => {
-            try {
-                await ExerciseService.deleteExercise(id);
-                setExercises((prev) => prev.filter((ex) => ex.id !== id));
-            } catch (error) {
-                console.error("Error deleting exercise:", error);
+            const response = await ExerciseService.deleteExercise(id);
+            
+            if (response.status !== 200) {
+                throw new Error("Falha ao excluir o exercício.");
             }
+            
+            // Remove da lista local apenas se a exclusão no backend foi bem-sucedida
+            setExercises((prev) => prev.filter((ex) => ex.id !== id));
         },
         [setExercises]
     );
@@ -193,9 +209,22 @@ const useLoadExercises = () => {
 
                 const updatedExercise = response.data!;
 
+                // Decode Base64 inputs and outputs like we do in loadExercises
+                const decodedExercise = {
+                    ...updatedExercise,
+                    inputs: updatedExercise.inputs.map((input) => ({
+                        ...input,
+                        input: fromBase64(input.input),
+                    })),
+                    outputs: updatedExercise.outputs.map((output) => ({
+                        ...output,
+                        output: fromBase64(output.output),
+                    })),
+                };
+
                 setExercises((prevExercises) =>
                     prevExercises.map((ex) =>
-                        ex.id === updatedExercise.id ? updatedExercise : ex
+                        ex.id === decodedExercise.id ? decodedExercise : ex
                     )
                 );
 

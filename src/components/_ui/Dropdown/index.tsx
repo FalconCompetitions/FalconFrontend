@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { DropdownProps } from "./types";
 import styles from "./Dropdown.module.scss";
 import { MdArrowDropDown, MdCheck } from "react-icons/md";
@@ -21,6 +21,7 @@ const CustomDropdown: React.FC<DropdownProps> = ({
     errorMessage,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [focusedIndex, setFocusedIndex] = useState(-1);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const optionsRef = useRef<HTMLUListElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -145,7 +146,56 @@ const CustomDropdown: React.FC<DropdownProps> = ({
         if (isOpen && type === "searchDropdown") {
             searchInputRef.current?.focus();
         }
+        // Reset focused index when dropdown opens/closes
+        if (!isOpen) {
+            setFocusedIndex(-1);
+        }
     }, [isOpen, type]);
+
+    // Keyboard navigation handler
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (!isOpen && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
+            e.preventDefault();
+            setIsOpen(true);
+            return;
+        }
+
+        if (!isOpen) return;
+
+        const selectableOptions = optionsToUse.filter(opt => !opt.separator);
+        
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setFocusedIndex(prev => 
+                    prev < selectableOptions.length - 1 ? prev + 1 : 0
+                );
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setFocusedIndex(prev => 
+                    prev > 0 ? prev - 1 : selectableOptions.length - 1
+                );
+                break;
+            case 'Enter':
+            case ' ':
+                e.preventDefault();
+                if (focusedIndex >= 0 && selectableOptions[focusedIndex]) {
+                    onChange(selectableOptions[focusedIndex].value);
+                    if (type !== "selectDropdown") {
+                        setIsOpen(false);
+                    }
+                }
+                break;
+            case 'Escape':
+                e.preventDefault();
+                setIsOpen(false);
+                break;
+            case 'Tab':
+                setIsOpen(false);
+                break;
+        }
+    }, [isOpen, focusedIndex, optionsToUse, onChange, type]);
 
     const selectedOption = useMemo(() => {
         return options.find((opt) => opt.value === value) || null;
@@ -172,6 +222,10 @@ const CustomDropdown: React.FC<DropdownProps> = ({
                 <button
                     className={`${errored && styles.errored}`}
                     onClick={!disabled ? () => handleInputClick() : () => {}}
+                    onKeyDown={handleKeyDown}
+                    aria-haspopup="listbox"
+                    aria-expanded={isOpen}
+                    aria-label={label || "Selecione uma opção"}
                     key={React.useId()}
                 >
                     <div className={`${styles.labelContainer}`} style={style}>
@@ -221,18 +275,24 @@ const CustomDropdown: React.FC<DropdownProps> = ({
 
                 {/* Opções do Dropdown */}
                 {isOpen && (
-                    <ul ref={optionsRef}>
+                    <ul ref={optionsRef} role="listbox" aria-label={label || "Opções"}>
                         {optionsToUse.map((option, idx) => {
                             if (option.separator === true) {
                                 return (
                                     <li
                                         className={styles.dividerContainer}
                                         key={`divider-${idx}`}
+                                        role="separator"
                                     >
                                         <div className={styles.divider}></div>
                                     </li>
                                 );
                             }
+
+                            // Calculate the index for non-separator items
+                            const selectableIndex = optionsToUse
+                                .slice(0, idx)
+                                .filter(opt => !opt.separator).length;
 
                             return (
                                 <li
@@ -243,7 +303,10 @@ const CustomDropdown: React.FC<DropdownProps> = ({
                                             setIsOpen(false);
                                         }
                                     }}
-                                    className={styles.option}
+                                    className={`${styles.option} ${focusedIndex === selectableIndex ? styles.focused : ''}`}
+                                    role="option"
+                                    aria-selected={option.value === value}
+                                    tabIndex={-1}
                                 >
                                     {(option.icon && (
                                         <div className={`${styles.icon}`}>

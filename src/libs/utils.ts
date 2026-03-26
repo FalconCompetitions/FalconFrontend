@@ -32,6 +32,46 @@ export const convertTimeSpanToNumber = (timeSpan: string) => {
 };
 
 /**
+ * Formata uma data ISO (UTC) para formato brasileiro sem conversão de timezone.
+ * Útil para competições locais onde queremos que o horário digitado seja o horário exibido.
+ * 
+ * @param isoDateString - String de data em formato ISO (ex: "2025-11-22T21:00:00.000Z")
+ * @returns String formatada em pt-BR (ex: "22/11/2025, 21:00") sem conversão de timezone
+ * 
+ * @example
+ * ```typescript
+ * formatDateWithoutTimezone("2025-11-22T21:00:00.000Z"); // "22/11/2025, 21:00"
+ * ```
+ */
+export const formatDateWithoutTimezone = (isoDateString: string): string => {
+    // Extrair componentes da data diretamente da string ISO
+    const datePart = isoDateString.split('T')[0]; // "2025-11-22"
+    const timePart = isoDateString.split('T')[1]?.split('.')[0] || isoDateString.split('T')[1]?.split('Z')[0]; // "21:00:00"
+    
+    if (!datePart || !timePart) return "Data inválida";
+    
+    const [year, month, day] = datePart.split('-');
+    const [hour, minute] = timePart.split(':');
+    
+    // Formatar no padrão brasileiro DD/MM/YYYY, HH:MM
+    return `${day}/${month}/${year}, ${hour}:${minute}`;
+};
+
+/**
+ * Formata apenas a data (sem hora) de uma string ISO sem conversão de timezone.
+ * 
+ * @param isoDateString - String de data em formato ISO
+ * @returns String formatada como DD/MM/YYYY
+ */
+export const formatDateOnlyWithoutTimezone = (isoDateString: string): string => {
+    const datePart = isoDateString.split('T')[0];
+    if (!datePart) return "Data inválida";
+    
+    const [year, month, day] = datePart.split('-');
+    return `${day}/${month}/${year}`;
+};
+
+/**
  * Parses a date string in the format "YYYY-MM-DD" and returns a Date object.
  *
  * @param dateStr - The date string to parse, expected in "YYYY-MM-DD" format.

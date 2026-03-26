@@ -1,5 +1,5 @@
 import { useUser } from "@/contexts/UserContext";
-import { parseDate } from "@/libs/utils";
+import { parseDate, formatDateWithoutTimezone } from "@/libs/utils";
 import useLoadCompetitions from "@/providers/CompetitionContextProvider/hooks/useLoadCompetitions";
 import CompetitionService from "@/services/CompetitionService";
 import { Competition } from "@/types/Competition";
@@ -16,6 +16,7 @@ export const useInscriptionForm = (
 
     const [activeCompetition, setActiveCompetition] =
         useState<Competition | null>(null);
+    const [selectedCompetitionId, setSelectedCompetitionId] = useState<number | null>(null);
 
     const [blockedState, setBlockedState] = useState(false);
 
@@ -42,10 +43,40 @@ export const useInscriptionForm = (
     const [groupSizeError, setGroupSizeError] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [isInscriptionsOpen, setIsInscriptionsOpen] = useState(true);
+    const [hasCompetitions, setHasCompetitions] = useState(true);
 
     const isFormValid = useMemo(() => {
-        return groupExists && !groupSizeError && isInscriptionsOpen;
-    }, [groupExists, groupSizeError, isInscriptionsOpen]);
+        return groupExists && !groupSizeError && isInscriptionsOpen && activeCompetition !== null;
+    }, [groupExists, groupSizeError, isInscriptionsOpen, activeCompetition]);
+
+    const selectCompetition = useCallback((competitionId: number) => {
+        const selected = openSubCompetitions.find(c => c.id === competitionId);
+        if (!selected) return;
+
+        setSelectedCompetitionId(competitionId);
+        setActiveCompetition(selected);
+        setCompetitionName(selected.name);
+        setMaxMembers(selected.maxMembers!);
+        
+        // Formatar datas SEM conversão de timezone (mantém horário original)
+        setInitialRegistration(
+            selected.startInscriptions 
+                ? formatDateWithoutTimezone(selected.startInscriptions.toString())
+                : "N/A"
+        );
+        setRegistrationEnd(
+            selected.endInscriptions 
+                ? formatDateWithoutTimezone(selected.endInscriptions.toString())
+                : "N/A"
+        );
+
+        // Validate group size against selected competition
+        if (initialMembers && selected.maxMembers! < initialMembers.length) {
+            setGroupSizeError(true);
+        } else {
+            setGroupSizeError(false);
+        }
+    }, [openSubCompetitions, initialMembers]);
 
     const handleSubmit = useCallback(
         async (e: React.FormEvent) => {
@@ -99,56 +130,45 @@ export const useInscriptionForm = (
     }, [loadOpenSubCompetitions]);
 
     useEffect(() => {
-        const res =
-            openSubCompetitions.sort((a, b) => {
-                if (!a.endInscriptions || !b.endInscriptions) return 0;
-                return (
-                    a.endInscriptions.getTime() - b.endInscriptions.getTime()
-                );
-            })[0] || null;
-
-        if (res == null) {
+        // Check if there are any competitions available
+        if (openSubCompetitions.length === 0) {
+            setHasCompetitions(false);
             setIsInscriptionsOpen(false);
             return;
         }
 
+        setHasCompetitions(true);
+
+        // Parse dates for all competitions
+        const parsedCompetitions = openSubCompetitions.map(comp => ({
+            ...comp,
+            startInscriptions: comp.startInscriptions ? new Date(comp.startInscriptions) : null,
+            endInscriptions: comp.endInscriptions ? new Date(comp.endInscriptions) : null,
+        }));
+
+        // Check if at least one competition has open inscriptions
         const now = new Date();
-        // @ts-expect-error : Expected
-        const endDate = parseDate(res.endInscriptions);
-        // @ts-expect-error : Expected
-        res.endInscriptions = parseDate(res.endInscriptions);
-        // @ts-expect-error : Expected
-        res.startInscriptions = parseDate(res.startInscriptions);
+        const hasOpenInscriptions = parsedCompetitions.some(comp => {
+            if (!comp.startInscriptions || !comp.endInscriptions) return false;
+            return now >= comp.startInscriptions && now <= comp.endInscriptions;
+        });
 
-        const isOpen = endDate ? now < endDate : false;
-        setIsInscriptionsOpen(isOpen);
+        setIsInscriptionsOpen(hasOpenInscriptions);
 
-        setCompetitionName(res.name);
-        setMaxMembers(res.maxMembers!);
-        setInitialRegistration(
-            Intl.DateTimeFormat("pt-BR").format(
-                res.startInscriptions || undefined
-            ) || "N/A"
-        );
-        setRegistrationEnd(
-            Intl.DateTimeFormat("pt-BR").format(endDate || undefined) || "N/A"
-        );
-        setActiveCompetition(res);
+        // Auto-select first competition if only one is available
+        if (openSubCompetitions.length === 1 && !selectedCompetitionId) {
+            selectCompetition(openSubCompetitions[0].id);
+        }
 
+        // Update member info
         if (initialMembers) {
-            if (res.maxMembers! < initialMembers.length) {
-                setGroupSizeError(true);
-            } else {
-                setGroupSizeError(false);
-            }
             setQuantityStudents(initialMembers.length);
             setMembers(initialMembers);
         } else {
-            setGroupSizeError(false);
             setQuantityStudents(0);
             setMembers([]);
         }
-    }, [openSubCompetitions, initialMembers]);
+    }, [openSubCompetitions, initialMembers, selectedCompetitionId, selectCompetition]);
 
     return {
         isSubCompetitionsLoading,
@@ -168,5 +188,9 @@ export const useInscriptionForm = (
         isSuccess,
         setIsSuccess,
         isInscriptionsOpen,
+        hasCompetitions,
+        openSubCompetitions,
+        selectedCompetitionId,
+        selectCompetition,
     };
 };

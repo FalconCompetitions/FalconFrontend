@@ -13,13 +13,14 @@ import TableRow from "@mui/material/TableRow";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import useSubmissions from "./hooks/useSubmissions";
+import { TableSkeleton } from "@/components/_ui/Skeleton/TableSkeleton";
 
 const AdminTeamPage: React.FC = () => {
     const [currentTable, setCurrentTable] = useState<"correct" | "wrong">(
         "correct"
     );
 
-    const { rows, displayedColumns, title } = useSubmissions(currentTable);
+    const { rows, displayedColumns, title, isLoading } = useSubmissions(currentTable);
 
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -131,6 +132,9 @@ const AdminTeamPage: React.FC = () => {
                 </Button>
             </div>
 
+            {isLoading ? (
+                <TableSkeleton columns={displayedColumns.length} rows={5} />
+            ) : (
             <Paper
                 sx={{
                     width: "100%",
@@ -272,6 +276,7 @@ const AdminTeamPage: React.FC = () => {
                     }}
                 />
             </Paper>
+            )}
         </>
     );
 };

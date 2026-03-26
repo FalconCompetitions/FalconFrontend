@@ -35,12 +35,17 @@ const useManageTeams = () => {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [teams, setTeams] = React.useState<Team[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
 
     // Load teams from SignalR when connected
     React.useEffect(() => {
-        if (!isConnected) return;
+        if (!isConnected) {
+            setIsLoading(false);
+            return;
+        }
 
         const loadTeams = async () => {
+            setIsLoading(true);
             try {
                 const groupsData = await requestGroups();
 
@@ -62,6 +67,8 @@ const useManageTeams = () => {
                 setTeams(transformedTeams);
             } catch (error) {
                 console.error("Error loading teams:", error);
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -134,6 +141,7 @@ const useManageTeams = () => {
         handleChangeRowsPerPage,
         handleToggleStatus,
         handleDeleteTeam,
+        isLoading,
     };
 };
 

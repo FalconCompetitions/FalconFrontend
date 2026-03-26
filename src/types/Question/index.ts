@@ -49,6 +49,11 @@ export interface Question {
      * @remarks This can be a general question, an exercise question, or a question related to problems or issues.
      */
     questionType: QuestionType;
+
+    /**
+     * The answer to the question, if it has been answered.
+     */
+    answer?: Answer | null;
 }
 
 export interface Answer {

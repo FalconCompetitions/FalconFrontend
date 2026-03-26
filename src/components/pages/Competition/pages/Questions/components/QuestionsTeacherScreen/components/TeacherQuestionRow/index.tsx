@@ -16,6 +16,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Question } from "../../../../types";
 import { useQuestions } from "@/components/pages/Competition/contexts/QuestionsContext";
+import { useSnackbar } from "notistack";
 
 interface TeacherQuestionRowProps {
     question: Question;
@@ -23,6 +24,7 @@ interface TeacherQuestionRowProps {
 
 const TeacherQuestionRow: FC<TeacherQuestionRowProps> = ({ question }) => {
     const { updateQuestion, editQuestion } = useQuestions();
+    const { enqueueSnackbar } = useSnackbar();
 
     const [open, setOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -41,7 +43,7 @@ const TeacherQuestionRow: FC<TeacherQuestionRowProps> = ({ question }) => {
 
     const handleSubmitAnswer = () => {
         if (!answerText.trim()) {
-            alert("A resposta não pode estar vazia.");
+            enqueueSnackbar("A resposta não pode estar vazia.", { variant: "warning" });
             return;
         }
 
@@ -52,10 +54,10 @@ const TeacherQuestionRow: FC<TeacherQuestionRowProps> = ({ question }) => {
         setTimeout(() => {
             if (updatedQuestion) {
                 editQuestion(updatedQuestion);
-                alert("Resposta enviada com sucesso!");
+                enqueueSnackbar("Resposta enviada com sucesso!", { variant: "success" });
                 setOpen(false);
             } else {
-                alert("Erro ao enviar a resposta.");
+                enqueueSnackbar("Erro ao enviar a resposta.", { variant: "error" });
             }
             setSubmitting(false);
         }, 1000);

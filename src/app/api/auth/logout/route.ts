@@ -5,8 +5,31 @@ import { AxiosResponse } from "axios";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-
-
+/**
+ * Handles GET requests to log out the current authenticated user.
+ *
+ * This endpoint invalidates the user's session by calling the backend logout endpoint
+ * and deleting the authentication cookie.
+ *
+ * @param req - The incoming Next.js request object.
+ * @returns A JSON response confirming the logout operation.
+ *
+ * @remarks
+ * **Request:** No request body required. Authentication is handled via cookies.
+ *
+ * **Success Response (200):**
+ * ```json
+ * {
+ *   "status": 200,
+ *   "message": "Usuário deslogado com sucesso.",
+ *   "data": undefined
+ * }
+ * ```
+ *
+ * **Error Responses:**
+ * - 403: User is not authenticated
+ * - 500: Server error during logout
+ */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(req: NextRequest) {
     const cookie = await cookies();

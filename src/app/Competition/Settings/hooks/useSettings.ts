@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import { useCompetitionHub } from "@/contexts/CompetitionHubContext";
-import { convertTimeSpanToNumber } from "@/libs/utils";
+import { convertTimeSpanToNumber, formatDateOnlyWithoutTimezone } from "@/libs/utils";
 
 const useSettings = () => {
     const { enqueueSnackbar } = useSnackbar();
@@ -25,11 +25,20 @@ const useSettings = () => {
         if (ongoingCompetition) {
             setMarathonName(ongoingCompetition.name);
             
-            // Format start date and time
+            // Format start date and time (sem conversão de timezone)
             if (ongoingCompetition.startTime) {
-                const startDateTime = new Date(ongoingCompetition.startTime);
-                setStartDate(startDateTime.toLocaleDateString('pt-BR'));
-                setStartTime(startDateTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+                const isoString = ongoingCompetition.startTime.toString();
+                const datePart = isoString.split('T')[0]; // "2025-11-30"
+                const timePart = isoString.split('T')[1]?.split('.')[0] || isoString.split('T')[1]?.split('Z')[0];
+                
+                if (datePart) {
+                    const [year, month, day] = datePart.split('-');
+                    setStartDate(`${day}/${month}/${year}`);
+                }
+                if (timePart) {
+                    const [hour, minute] = timePart.split(':');
+                    setStartTime(`${hour}:${minute}`);
+                }
             }
             
             // Convert TimeSpan strings (HH:mm:ss) to minutes for display

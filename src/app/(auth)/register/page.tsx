@@ -23,10 +23,11 @@ const Cadastro: React.FC = () => {
 
     return (
         <ScreenContainer>
-            <div className="w-1/2 bg-[#4F85A6] flex flex-col justify-center items-center text-white p-10">
-                <Falcon className="max-w-md fill-white border-none object-contain mb-4 w-64 h-auto" />
-                <h1 className="text-5xl font-bold mt-4">FHO</h1>
-                <p className="text-lg text-center mb-6">
+            {/* Seção lateral - escondida em mobile */}
+            <div className="hidden lg:flex w-1/2 bg-[#4F85A6] flex-col justify-center items-center text-white p-10">
+                <Falcon className="max-w-md fill-white border-none object-contain mb-4 w-48 xl:w-64 h-auto" />
+                <h1 className="text-4xl xl:text-5xl font-bold mt-4">FHO</h1>
+                <p className="text-base xl:text-lg text-center mb-6">
                     Para acessar sua conta da Maratona de Programação
                 </p>
                 <Button
@@ -39,8 +40,14 @@ const Cadastro: React.FC = () => {
                 </Button>
             </div>
 
-            <div className="w-1/2 flex flex-col justify-center items-center p-10">
-                <h2 className="text-3xl font-bold text-[#4F85A6] mb-6">
+            {/* Header mobile - visível apenas em telas pequenas */}
+            <div className="lg:hidden w-full bg-[#4F85A6] flex flex-col items-center justify-center py-6 px-4">
+                <Falcon className="w-16 h-auto fill-white mb-2" />
+                <p className="text-white text-xl font-bold">FHO</p>
+            </div>
+
+            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-10">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#4F85A6] mb-6">
                     Crie sua conta
                 </h2>
 
@@ -52,6 +59,11 @@ const Cadastro: React.FC = () => {
                             console.log(d)
                         )}
                     >
+                        {formError && (
+                            <div className="w-full bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm" role="alert">
+                                {formError}
+                            </div>
+                        )}
                         {/* Nome */}
                         <Controller
                             name="name"
@@ -206,20 +218,28 @@ const Cadastro: React.FC = () => {
                                 )}
                             />
                         )}
+
+                        {/* Botão Criar - agora dentro do form */}
+                        <Button
+                            variant="primary"
+                            type="submit"
+                            rounded={true}
+                            fullWidth={true}
+                            disabled={isLoading}
+                            loading={isLoading}
+                            className="mt-4"
+                        >
+                            Criar
+                        </Button>
                     </form>
-                    <Button
-                        variant="primary"
-                        // @ts-expect-error - Type mismatch with react-hook-form types
-                        onClick={handleSubmit(handleFormSubmit, (d) =>
-                            console.log(d)
-                        )}
-                        rounded={true}
-                        fullWidth={true}
-                        disabled={isLoading}
-                        loading={isLoading}
-                    >
-                        Criar
-                    </Button>
+
+                    {/* Link para login em mobile */}
+                    <p className="lg:hidden flex flex-wrap gap-1 justify-center mt-4 text-sm text-center text-gray-600">
+                        Já tem uma conta?
+                        <a href="/login" className="text-[#4F85A6] hover:underline font-medium">
+                            Faça login
+                        </a>
+                    </p>
                 </div>
             </div>
         </ScreenContainer>

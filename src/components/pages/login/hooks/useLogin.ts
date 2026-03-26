@@ -7,8 +7,9 @@ import { ServerSideResponse } from "@/types/Global";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm, FieldValues } from "react-hook-form";
 import z from "zod";
+import { mapBackendErrors } from "@/utilities/formErrorHandler";
 
 interface LoginInputs {
     ra: string;
@@ -56,20 +57,13 @@ const useLogin = () => {
 
             if(res.status != 200) {
                 if(res.data?.errors) {
-                    const errors = res.data.errors;
-
-                    for (let i = 0; i < errors.length; i++) {
-                        if(errors[i].target == "form") {
-                            setFormError(errors[i].error);
-                            continue;
-                        }
-
-                        setError(errors[i].target as "ra" | "password", {
-                            type: "onBlur",
-                            message: errors[i].error,
-                        });
-                        setValue(errors[i].target as "ra" | "password", "");
-                    }
+                    mapBackendErrors({
+                        errors: res.data.errors,
+                        setError,
+                        setValue,
+                        setFormError,
+                        validFields: ["ra", "password"],
+                    });
                 }
 
                 setIsLoading(false);
@@ -122,25 +116,7 @@ const useLogin = () => {
             }
         } catch (err) {
             console.error(err);
-
-            if (res!.status == 400) {
-                const body = res!.data!;
-
-                const errors = body.errors!;
-
-                for (let i = 0; i < errors.length; i++) {
-                    if(errors[i].target == "form") {
-                            setFormError(errors[i].error);
-                            continue;
-                    }
-
-                    setError(errors[i].target as "ra" | "password", {
-                        type: "onBlur",
-                        message: errors[i].error,
-                    });
-                    setValue(errors[i].target as "ra" | "password", "");
-                }
-            }
+            setFormError("Erro ao fazer login. Tente novamente.");
         } finally {
             setIsLoading(false);
         }

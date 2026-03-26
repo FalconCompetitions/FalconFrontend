@@ -1,11 +1,10 @@
-"use client";
-
 import { DropdownOption } from "@/components/_ui/Dropdown/types";
 import { useUser } from "@/contexts/UserContext";
 import AuthService from "@/services/AuthService";
 import { RegisterUserRequest } from "@/types/Auth/Requests";
 import { RegisterUserResponse } from "@/types/Auth/Responses";
 import { ServerSideResponse } from "@/types/Global";
+import { mapBackendErrors } from "@/utilities/formErrorHandler";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
@@ -20,12 +19,11 @@ const schema = z
             .min(6, { message: "RA deve ter no mínimo 6 dígitos!" })
             .max(7, { message: "RA deve ter no máximo 7 dígitos!" }),
         email: z.string().email("Formato de e-mail inválido!"),
-        password: z.string({ message: "Campo obrigatório" }),
-        joinYear: z.coerce
-            .number()
-            .min(new Date().getFullYear() - 8, "Ano inválido!")
-            .max(new Date().getFullYear(), "Ano inválido!")
-            .nullable(),
+        password: z
+            .string({ message: "Campo obrigatório" })
+            .min(8, { message: "A senha deve ter no mínimo 8 caracteres" })
+            .regex(/[0-9]/, { message: "A senha deve conter pelo menos um número" }),
+        joinYear: z.coerce.number().nullable().optional(),
         role: z.enum(["Student", "Teacher"]),
         accessCode: z.string().optional(),
     })
@@ -47,16 +45,17 @@ const schema = z
         };
 
         if (data.role === "Student") {
+            const currentYear = new Date().getFullYear();
+            
             // @ts-expect-error : extra
-            if (data.joinYear === "") {
+            if (data.joinYear === "" || data.joinYear === null || data.joinYear === undefined) {
                 addInvalidJoinYear();
             } else if (
-                !data.joinYear ||
                 data.joinYear === 0 ||
-                new Date().getFullYear() - data.joinYear > 8
+                data.joinYear < currentYear - 8
             ) {
                 addInvalidJoinYear();
-            } else if (data.joinYear > new Date().getFullYear()) {
+            } else if (data.joinYear > currentYear) {
                 addInvalidJoinYear();
             }
         }
@@ -111,36 +110,29 @@ const useRegister = () => {
                 return;
             }
 
-            let res: ServerSideResponse<RegisterUserResponse> | null = null;
+            setIsLoading(true);
+            setFormError(null);
 
             try {
-                res = await AuthService.registerUser(data);
+                const res = await AuthService.registerUser(data);
 
-                if (res.status != 200) {
+                if (res.status !== 200) {
                     if (res.data?.errors) {
-                        const errors = res.data.errors;
-
-                        for (let i = 0; i < errors.length; i++) {
-                            if (errors[i].target == "form") {
-                                setFormError(errors[i].error);
-                                continue;
-                            }
-
-                            setError(errors[i].target as "ra" | "password", {
-                                type: "onBlur",
-                                message: errors[i].error,
-                            });
-                            setValue(errors[i].target as "ra" | "password", "");
-                        }
+                        mapBackendErrors({
+                            errors: res.data.errors,
+                            setError,
+                            setValue,
+                            setFormError,
+                            validFields: ["name", "ra", "email", "password", "joinYear", "accessCode"],
+                        });
                     }
 
-                    setIsLoading(false);
                     return;
                 }
 
                 const resData = res.data;
 
-                if (res.status == 200 && resData) {
+                if (res.status === 200 && resData) {
                     setUser({
                         id: resData.user.id,
                         ra: resData.user.ra,
@@ -178,26 +170,13 @@ const useRegister = () => {
                     }, 100);
                 }
             } catch (err) {
-                console.error(err);
-
-                if (res!.status == 400) {
-                    const body = res!.data!;
-
-                    const errors = body.errors!;
-
-                    for (let i = 0; i < errors.length; i++) {
-                        setError(errors[i].target as "ra" | "password", {
-                            type: "onBlur",
-                            message: errors[i].error,
-                        });
-                        setValue(errors[i].target as "ra" | "password", "");
-                    }
-                }
+                console.error("Registration error:", err);
+                setFormError("Erro ao registrar usuário. Tente novamente.");
             } finally {
                 setIsLoading(false);
             }
         },
-        [isValid, router, setError, setUser, setValue]
+        [isValid, router, setError, setUser, setValue, setFormError]
     );
 
     const formData = watch();

@@ -43,6 +43,8 @@ export interface GroupResponse {
     users: GenericUserInfo[];
     /** Optional list of group invitations. */
     groupInvitations?: GroupInvitationResponse[];
+    /** The date of the last competition the group participated in. */
+    lastCompetitionDate?: string;
 }
 
 /**

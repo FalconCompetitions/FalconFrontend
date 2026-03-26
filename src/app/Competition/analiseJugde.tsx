@@ -4,10 +4,12 @@ import type React from "react"
 import { useState, useCallback, useMemo } from "react"
 import { Box, Paper, Typography } from "@mui/material"
 import Button from "@/components/_ui/Button"
-import { FaUpload, FaPaperPlane, FaDownload } from "react-icons/fa"
+import { FaUpload, FaPaperPlane, FaDownload, FaCheck } from "react-icons/fa"
 import { useCompetitionHub } from "@/contexts/CompetitionHubContext"
+import { useRanking } from "@/contexts/CompetitionHubContext/hooks/useRanking"
 import { useUser } from "@/contexts/UserContext"
 import { toBase64 } from "@/libs/utils"
+import { useSnackbar } from "notistack"
 
 // Exercícios e linguagens
 const languages = ["C", "C++", "C#", "Go", "Java", "JavaScript", "PHP", "Python"]
@@ -50,6 +52,8 @@ const languageIds: Record<string, number> = {
 const useSendExercise = () => {
   const { user } = useUser();
   const { sendExerciseAttempt, ongoingCompetition } = useCompetitionHub();
+  const { hasGroupSolvedExercise } = useRanking();
+  const { enqueueSnackbar } = useSnackbar();
 
   // A => Char Code 65
   const exercisesInCompetition = useMemo(() => {
@@ -63,12 +67,36 @@ const useSendExercise = () => {
     return charCodesWithId;
   }, [ongoingCompetition?.exercises]);
 
+  // Get list of accepted exercises for the current group
+  const acceptedExercises = useMemo(() => {
+    if (!user?.group?.id) return new Set<string>();
+    
+    const accepted = new Set<string>();
+    Object.entries(exercisesInCompetition).forEach(([letter, exerciseId]) => {
+      if (hasGroupSolvedExercise(user.group!.id, exerciseId)) {
+        accepted.add(letter);
+      }
+    });
+    return accepted;
+  }, [user?.group?.id, exercisesInCompetition, hasGroupSolvedExercise]);
 
-  const [selectedExercise, setSelectedExercise] = useState<string>("A");
+  // Find first non-accepted exercise for default selection
+  const defaultExercise = useMemo(() => {
+    const exerciseLetters = Object.keys(exercisesInCompetition);
+    return exerciseLetters.find(letter => !acceptedExercises.has(letter)) || exerciseLetters[0] || "A";
+  }, [exercisesInCompetition, acceptedExercises]);
+
+
+  const [selectedExercise, setSelectedExercise] = useState<string>(defaultExercise);
   const [selectedLanguage, setSelectedLanguage] = useState<string>(languages[0]);
   const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Check if selected exercise is already accepted
+  const isSelectedExerciseAccepted = useMemo(() => {
+    return acceptedExercises.has(selectedExercise);
+  }, [acceptedExercises, selectedExercise]);
 
   const handleExerciseChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedExercise(event.target.value)
@@ -100,12 +128,18 @@ const useSendExercise = () => {
 
   const handleSubmitAnalysis = useCallback(async () => {
     if (!file) {
-      alert("Por favor, anexe um arquivo antes de enviar.")
+      enqueueSnackbar("Por favor, anexe um arquivo antes de enviar.", { variant: "warning" })
       return
     }
 
     if (!user?.group?.id || !ongoingCompetition?.id) {
-      alert("Erro: Dados do usuário ou competição não encontrados.")
+      enqueueSnackbar("Erro: Dados do usuário ou competição não encontrados.", { variant: "error" })
+      return
+    }
+
+    // Check if exercise is already accepted (frontend validation)
+    if (acceptedExercises.has(selectedExercise)) {
+      enqueueSnackbar("Este exercício já foi aceito pelo seu grupo. Não é possível enviar novamente.", { variant: "warning" })
       return
     }
 
@@ -138,17 +172,17 @@ const useSendExercise = () => {
       })
 
       // User will be notified automatically by the CompetitionHubContext
-      alert(`📤 Submissão enviada! Aguarde o resultado do judge...`)
+      enqueueSnackbar("📤 Submissão enviada! Aguarde o resultado do judge...", { variant: "info" })
 
       setAttachedFileName(null)
       setFile(null)
     } catch (error) {
       console.error("[analiseJugde] Erro ao submeter exercício:", error)
-      alert("Ocorreu um erro ao enviar a análise. Tente novamente.")
+      enqueueSnackbar("Ocorreu um erro ao enviar a análise. Tente novamente.", { variant: "error" })
     } finally {
       setIsSubmitting(false)
     }
-  }, [file, user?.group?.id, ongoingCompetition?.id, exercisesInCompetition, selectedExercise, selectedLanguage, sendExerciseAttempt])
+  }, [file, user?.group?.id, ongoingCompetition?.id, exercisesInCompetition, selectedExercise, selectedLanguage, sendExerciseAttempt, acceptedExercises, enqueueSnackbar])
 
   return {
     selectedExercise,
@@ -162,6 +196,8 @@ const useSendExercise = () => {
     isSubmitting,
     exercisesInCompetition,
     languages,
+    acceptedExercises,
+    isSelectedExerciseAccepted,
   }
 }
 
@@ -179,6 +215,8 @@ const AnaliseJuiz: React.FC = () => {
     isSubmitting,
     exercisesInCompetition,
     languages,
+    acceptedExercises,
+    isSelectedExerciseAccepted,
   } = useSendExercise()
 
   return (
@@ -274,16 +312,25 @@ const AnaliseJuiz: React.FC = () => {
           </label>
           <div className="flex justify-center gap-4 mt-2 items-center">
             <select
-              className="border rounded-lg px-4 py-2 w-40 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#4F85A6] focus:border-transparent transition-all duration-200"
+              className={`border rounded-lg px-4 py-2 w-48 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#4F85A6] focus:border-transparent transition-all duration-200 ${
+                isSelectedExerciseAccepted ? "bg-green-50 border-green-400" : ""
+              }`}
               value={selectedExercise}
               onChange={handleExerciseChange}
               disabled={isSubmitting}
             >
-              {Object.keys(exercisesInCompetition).map((letter: string) => (
-                <option key={letter} value={letter}>
-                  {letter}
-                </option>
-              ))}
+              {Object.keys(exercisesInCompetition).map((letter: string) => {
+                const isAccepted = acceptedExercises.has(letter);
+                return (
+                  <option 
+                    key={letter} 
+                    value={letter}
+                    className={isAccepted ? "text-green-600 font-bold" : ""}
+                  >
+                    {letter} {isAccepted ? "✓ (Aceito)" : ""}
+                  </option>
+                );
+              })}
             </select>
 
             <input
@@ -297,6 +344,7 @@ const AnaliseJuiz: React.FC = () => {
             <Button
               className="bg-[#4F85A6] text-white px-6 py-3 rounded-full font-bold hover:bg-[#3B6A82] transition-all duration-300 shadow-md flex items-center justify-center gap-2"
               onClick={() => document.getElementById("file-upload")?.click()}
+              disabled={isSelectedExerciseAccepted}
             >
               <FaUpload size={18} /> Anexar arquivo
             </Button>
@@ -306,15 +354,34 @@ const AnaliseJuiz: React.FC = () => {
               Arquivo anexado: <span className="font-bold">{attachedFileName}</span>
             </Typography>
           )}
+          {isSelectedExerciseAccepted && (
+            <Typography
+              variant="body1"
+              sx={{
+                mt: 2,
+                color: "#16a34a",
+                backgroundColor: "#dcfce7",
+                padding: "12px 16px",
+                borderRadius: "8px",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+            >
+              <FaCheck size={16} /> Este exercício já foi aceito pelo seu grupo!
+            </Typography>
+          )}
         </div>
 
         {/* Botão enviar */}
         <Button
           className={`bg-[#4F85A6] text-white px-8 py-3 rounded-full font-bold hover:bg-[#3B6A82] transition-all duration-300 shadow-lg flex items-center justify-center mx-auto gap-2${
-            isSubmitting || !attachedFileName ? " opacity-50 pointer-events-none" : ""
+            isSubmitting || !attachedFileName || isSelectedExerciseAccepted ? " opacity-50 pointer-events-none" : ""
           }`}
           onClick={handleSubmitAnalysis}
-          disabled={isSubmitting || !attachedFileName}
+          disabled={isSubmitting || !attachedFileName || isSelectedExerciseAccepted}
         >
           {isSubmitting ? "Enviando..." : "Enviar"} <FaPaperPlane size={18} />
         </Button>

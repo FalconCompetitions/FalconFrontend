@@ -1,18 +1,18 @@
 "use client";
 
 import type React from "react";
-import Link from "next/link";
+import { useMemo } from "react";
 import {
     Users,
     Calendar,
     Trophy,
     UserPlus,
     Clock,
-    Info,
     AlertCircle,
-    CheckCircle,
     CalendarX,
 } from "lucide-react";
+import CustomDropdown from "@/components/_ui/Dropdown";
+import type { DropdownOption } from "@/components/_ui/Dropdown/types";
 import {
     Card,
     CardContent,
@@ -46,7 +46,18 @@ const CompetitionInscription: React.FC<{
         setIsSuccess,
         isInscriptionsOpen,
         isSubCompetitionsLoading,
+        hasCompetitions,
+        openSubCompetitions,
+        selectedCompetitionId,
+        selectCompetition,
     } = useInscriptionForm(toggleMenu);
+
+    const competitionOptions: DropdownOption[] = useMemo(() => {
+        return openSubCompetitions.map(comp => ({
+            value: comp.id,
+            label: comp.name,
+        }));
+    }, [openSubCompetitions]);
 
     const readOnlyInputStyle =
         "mt-2 text-lg p-4 bg-slate-50 cursor-not-allowed border-slate-200";
@@ -91,12 +102,19 @@ const CompetitionInscription: React.FC<{
 
                     <div className="flex items-center gap-4 mt-6">
                         {isSubCompetitionsLoading ? (
-                            <Skeleton
-                                variant="rounded"
-                                width={160}
-                                height={40}
-                            />
-                        ) : (
+                            <>
+                                <Skeleton
+                                    variant="rounded"
+                                    width={160}
+                                    height={40}
+                                />
+                                <Skeleton
+                                    variant="rounded"
+                                    width={160}
+                                    height={40}
+                                />
+                            </>
+                        ) : hasCompetitions ? (
                             <>
                                 {isInscriptionsOpen ? (
                                     <Badge className="border-transparent bg-green-100 text-green-800 text-xl px-5 py-2 hover:bg-green-100 hover:text-green-800">
@@ -109,19 +127,13 @@ const CompetitionInscription: React.FC<{
                                         Inscrições Encerradas
                                     </Badge>
                                 )}
+                                {registrationEnd && (
+                                    <span className="text-slate-600 text-xl">
+                                        Prazo até: {registrationEnd}
+                                    </span>
+                                )}
                             </>
-                        )}
-                        {isSubCompetitionsLoading ? (
-                            <Skeleton
-                                variant="rounded"
-                                width={160}
-                                height={40}
-                            />
-                        ) : (
-                            <span className="text-slate-600 text-xl">
-                                Prazo até: {registrationEnd}
-                            </span>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </div>
@@ -138,13 +150,28 @@ const CompetitionInscription: React.FC<{
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-10 space-y-6">
+                                    {!hasCompetitions && !isSubCompetitionsLoading && (
+                                        <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-300 text-yellow-900 rounded-lg text-lg">
+                                            <AlertCircle className="h-6 w-6 text-yellow-700 flex-shrink-0 mt-1" />
+                                            <div>
+                                                <p className="font-semibold">
+                                                    Nenhuma competição disponível
+                                                </p>
+                                                <p className="mt-1">
+                                                    Não há competições com inscrições abertas no momento.
+                                                    Aguarde novas competições serem criadas.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="grid grid-rows-1 lg:grid-rows-2 gap-6">
                                         <div className="lg:col-span-2">
                                             <Label
                                                 htmlFor="competition-name"
                                                 className="text-xl font-medium text-slate-700"
                                             >
-                                                Nome da Maratona:
+                                                {openSubCompetitions.length > 1 ? "Selecione a Maratona:" : "Nome da Maratona:"}
                                             </Label>
                                             {isSubCompetitionsLoading ? (
                                                 <Skeleton
@@ -153,12 +180,25 @@ const CompetitionInscription: React.FC<{
                                                     height={56}
                                                     className="mt-2"
                                                 />
+                                            ) : openSubCompetitions.length > 1 ? (
+                                                <CustomDropdown
+                                                    options={competitionOptions}
+                                                    onChange={(val: string | number | null) => {
+                                                        if (val == null) return;
+                                                        selectCompetition(Number(val));
+                                                    }}
+                                                    value={selectedCompetitionId}
+                                                    disabled={isSubCompetitionsLoading || !hasCompetitions}
+                                                    type="normalDropdown"
+                                                    grow={true}
+                                                    className="mt-2"
+                                                />
                                             ) : (
                                                 <Input
                                                     id="competition-name"
                                                     name="competition-name"
                                                     type="text"
-                                                    value={competitionName}
+                                                    value={competitionName || "Nenhuma competição disponível"}
                                                     readOnly
                                                     className="mt-2 text-xl p-4 bg-slate-50 cursor-not-allowed border-slate-200"
                                                 />
@@ -178,9 +218,13 @@ const CompetitionInscription: React.FC<{
                                                             width={80}
                                                             height={32}
                                                         />
-                                                    ) : (
+                                                    ) : hasCompetitions && maxMembers ? (
                                                         <span className="text-xl font-semibold text-slate-900 whitespace-nowrap">
                                                             {maxMembers} membros
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xl font-semibold text-slate-500 whitespace-nowrap">
+                                                            N/A
                                                         </span>
                                                     )}
                                                 </div>
@@ -189,44 +233,48 @@ const CompetitionInscription: React.FC<{
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-6">
-                                        <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <Calendar className="h-5 w-5 text-blue-600" />
-                                                <span className="font-medium text-slate-700 text-xl">
-                                                    Início das Inscrições
-                                                </span>
-                                            </div>
-                                            {isSubCompetitionsLoading ? (
-                                                <Skeleton
-                                                    variant="rounded"
-                                                    width={"100%"}
-                                                    height={32}
-                                                />
-                                            ) : (
-                                                <p className="text-xl font-semibold text-slate-900">
-                                                    {initialRegistration}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="p-4 rounded-lg bg-gradient-to-r from-red-50 to-pink-50 border border-red-100">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <Calendar className="h-5 w-5 text-red-600" />
-                                                <span className="text-xl text-slate-700 ">
-                                                    Fim das Inscrições
-                                                </span>
-                                            </div>
-                                            {isSubCompetitionsLoading ? (
-                                                <Skeleton
-                                                    variant="rounded"
-                                                    width={"100%"}
-                                                    height={32}
-                                                />
-                                            ) : (
-                                                <p className="text-xl font-semibold text-slate-900">
-                                                    {registrationEnd}
-                                                </p>
-                                            )}
-                                        </div>
+                                        {hasCompetitions && (
+                                            <>
+                                                <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <Calendar className="h-5 w-5 text-blue-600" />
+                                                        <span className="font-medium text-slate-700 text-xl">
+                                                            Início das Inscrições
+                                                        </span>
+                                                    </div>
+                                                    {isSubCompetitionsLoading ? (
+                                                        <Skeleton
+                                                            variant="rounded"
+                                                            width={"100%"}
+                                                            height={32}
+                                                        />
+                                                    ) : (
+                                                        <p className="text-xl font-semibold text-slate-900">
+                                                            {initialRegistration || "N/A"}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="p-4 rounded-lg bg-gradient-to-r from-red-50 to-pink-50 border border-red-100">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <Calendar className="h-5 w-5 text-red-600" />
+                                                        <span className="text-xl text-slate-700 ">
+                                                            Fim das Inscrições
+                                                        </span>
+                                                    </div>
+                                                    {isSubCompetitionsLoading ? (
+                                                        <Skeleton
+                                                            variant="rounded"
+                                                            width={"100%"}
+                                                            height={32}
+                                                        />
+                                                    ) : (
+                                                        <p className="text-xl font-semibold text-slate-900">
+                                                            {registrationEnd || "N/A"}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

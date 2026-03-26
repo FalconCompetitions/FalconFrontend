@@ -10,15 +10,10 @@ import AnaliseJuiz from "../Competition/analiseJugde";
 import { useRanking } from "@/contexts/CompetitionHubContext/hooks/useRanking";
 import { useCompetitionHub } from "@/contexts/CompetitionHubContext";
 import { convertTimeSpanToNumber } from "@/libs/utils";
-
-interface GroupRankingData {
-    group: string;
-    exercisesAccepteds: string[];
-    times: { [key: string]: string };
-    total: string;
-    totalCount: number;
-    totalScore: number;
-}
+import { useRouter } from "next/navigation";
+import { useUser } from "@/contexts/UserContext";
+import { RankingTableSkeleton } from "@/components/_ui/Skeleton/TableSkeleton";
+import EmptyState from "@/components/_ui/EmptyState";
 
 const colors = [
     "#979797",
@@ -38,45 +33,33 @@ const colors = [
     "#80A582",
 ];
 
-const data: GroupRankingData[] = [
-    {
-        group: "Equipe 1",
-        exercisesAccepteds: ["A", "B", "C", "D", "E", "F", "G", "H", "I"],
-        times: {
-            A: "2/64",
-            B: "1/16",
-            C: "1/99",
-            D: "2/80",
-            E: "1/31",
-            F: "1/7",
-            G: "1/162",
-            H: "3/120",
-            I: "1/88",
-            J: "2/47",
-        },
-        total: "9 (740)",
-        totalCount: 9,
-        totalScore: 740,
-    },
-];
-
-data.sort((a, b) => {
-    if (a.totalCount === b.totalCount) return a.totalScore - b.totalScore;
-    return b.totalCount - a.totalCount;
-});
-
 const RankingPage: React.FC = () => {
     const [open, setOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const { user } = useUser();
     const { liveRanking } = useRanking();
     const { requestRanking, ongoingCompetition, isConnected } =
         useCompetitionHub();
+    const router = useRouter();
 
     // Request ranking when the page loads and connection is ready
     useEffect(() => {
         if (isConnected) {
-            requestRanking();
+            console.log("🔄 Competition page mounted, requesting ranking");
+            setIsLoading(true);
+            requestRanking().finally(() => {
+                setIsLoading(false);
+            });
         }
     }, [isConnected, requestRanking]);
+
+    // Redirect if no competition is available
+    useEffect(() => {
+        if (isConnected && !ongoingCompetition) {
+            console.log("⚠️ No competition available, redirecting to profile");
+            router.push("/Profile");
+        }
+    }, [isConnected, ongoingCompetition, router]);
 
     // Transform SignalR ranking data to component format
     const data = useMemo(() => {
@@ -106,13 +89,19 @@ const RankingPage: React.FC = () => {
                 }
 
                 // Format: "attempts/time" (e.g., "2/64" means 2 attempts, 64 minutes)
-                // submissionPenalty is already in seconds, so convert to minutes
-                const penaltyMinutes = convertTimeSpanToNumber(
-                    String(ongoingCompetition.submissionPenalty)
-                ) / 60;
-                times[exerciseLetter] = `${attempt.attempts}/${Math.round(
-                    attempt.attempts * penaltyMinutes
-                )}`;
+                // Only count attempts for accepted exercises - penalty is applied per accepted problem
+                if (attempt.accepted) {
+                    const penaltyMinutes =
+                        convertTimeSpanToNumber(
+                            String(ongoingCompetition.submissionPenalty)
+                        ) / 60;
+                    times[exerciseLetter] = `${attempt.attempts}/${Math.round(
+                        attempt.attempts * penaltyMinutes
+                    )}`;
+                } else {
+                    // For non-accepted exercises, just show attempts without penalty calculation
+                    times[exerciseLetter] = `${attempt.attempts}/-`;
+                }
             });
 
             return {
@@ -141,16 +130,29 @@ const RankingPage: React.FC = () => {
 
     return (
         <div className="relative flex flex-col items-center p-8 bg-gray-100 min-h-screen">
-            {/* Botão que abre o modal */}
-            <div className="flex justify-end mb-4 mt-4 w-full max-w-7xl">
-                <Button
-                    className="bg-[#4F85A6] text-white px-6 py-2 rounded-md font-bold hover:bg-[#3B6A82] transition"
-                    onClick={() => setOpen(true)}
-                >
-                    Enviar Exercícios
-                </Button>
-            </div>
+            {user?.role !== "Admin" && (
+                <div className="flex justify-end mb-4 mt-4 w-full max-w-7xl">
+                    <Button
+                        className="bg-[#4F85A6] text-white px-6 py-2 rounded-md font-bold hover:bg-[#3B6A82] transition"
+                        onClick={() => setOpen(true)}
+                    >
+                        Enviar Exercícios
+                    </Button>
+                </div>
+            )}
 
+            {isLoading ? (
+                <RankingTableSkeleton rows={5} />
+            ) : data.length === 0 ? (
+                <div className="w-full max-w-7xl bg-white rounded-xl shadow-md">
+                    <EmptyState
+                        title="Nenhum dado de ranking disponível"
+                        description="Aguarde os participantes enviarem suas soluções para visualizar o ranking."
+                        variant="noData"
+                    />
+                </div>
+            ) : (
+            <>
             {/* Cabeçalho da Tabela */}
             <div className="w-full max-w-7xl">
                 <div className="flex bg-[#4F85A6] text-white text-lg font-bold text-center rounded-t-2xl p-4">
@@ -220,6 +222,8 @@ const RankingPage: React.FC = () => {
                     ))}
                 </div>
             </div>
+            </>
+            )}
 
             {/* Modal com o componente separado */}
             <Modal open={open} onClose={() => setOpen(false)}>

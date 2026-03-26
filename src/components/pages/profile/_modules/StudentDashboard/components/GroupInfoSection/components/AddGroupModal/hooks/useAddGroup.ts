@@ -5,6 +5,7 @@ import { enqueueSnackbar } from "notistack";
 import { useCallback, useEffect, useState } from "react";
 import { SubmitErrorHandler, SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
+import { mapBackendErrors } from "@/utilities/formErrorHandler";
 
 interface AddGroupFormValues {
     name: string;
@@ -28,8 +29,9 @@ export const useAddGroup = (onClose: () => void) => {
     const [controllerSignal, setControllerSignal] =
         useState<AbortController | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
 
-    const { control, handleSubmit, setError, watch } = useForm({
+    const { control, handleSubmit, setError, setValue, watch } = useForm({
         defaultValues: {
             name: "",
             member2Ra: "",
@@ -49,6 +51,7 @@ export const useAddGroup = (onClose: () => void) => {
 
             try {
                 setIsLoading(true);
+                setFormError(null);
                 const RAsArray = [data.member2Ra, data.member3Ra]
                     .filter((ra): ra is string => typeof ra === "string" && ra.trim() !== "");
 
@@ -96,42 +99,27 @@ export const useAddGroup = (onClose: () => void) => {
                     return;
                 }
 
-                if (response.status === 400) {
-                    const errorMessage = (response as any).message || "Erro ao criar o grupo. Verifique os dados informados.";
-                    enqueueSnackbar(errorMessage, {
-                        variant: "error",
-                        autoHideDuration: 3000,
-                        anchorOrigin: {
-                            vertical: "bottom",
-                            horizontal: "right",
-                        },
+                // Handle errors from backend
+                if (response.status === 400 && (response.data as any)?.errors) {
+                    mapBackendErrors({
+                        errors: (response.data as any).errors,
+                        setError,
+                        setValue,
+                        setFormError,
+                        validFields: ["name", "member2Ra", "member3Ra"],
+                        clearOnError: false,
                     });
                 } else {
-                    enqueueSnackbar("Erro inesperado ao criar o grupo. Tente novamente.", {
-                        variant: "error",
-                        autoHideDuration: 3000,
-                        anchorOrigin: {
-                            vertical: "bottom",
-                            horizontal: "right",
-                        },
-                    });
+                    setFormError("Erro ao criar o grupo. Tente novamente.");
                 }
             } catch (error) {
                 console.error("Erro ao criar grupo:", error);
-                
-                enqueueSnackbar("Não foi possível criar o grupo. Tente novamente mais tarde.", {
-                    variant: "error",
-                    autoHideDuration: 3000,
-                    anchorOrigin: {
-                        vertical: "bottom",
-                        horizontal: "right",
-                    },
-                });
+                setFormError("Não foi possível criar o grupo. Tente novamente mais tarde.");
             } finally {
                 setIsLoading(false);
             }
         },
-        [controllerSignal, formValues.name, onClose, setUser, user]
+        [controllerSignal, formValues.name, onClose, setUser, user, setError, setValue]
     );
 
     const handleSubmitError: SubmitErrorHandler<AddGroupFormValues> =
@@ -168,6 +156,7 @@ export const useAddGroup = (onClose: () => void) => {
         handleSubmit,
         isLoading,
         control,
+        formError,
     };
 };
 

@@ -202,9 +202,29 @@ const useCreateCompetition = () => {
                 shouldValidate: false,
                 shouldDirty: false,
             });
+            
+            // Extrair data e hora no horário LOCAL do usuário
+            // Backend retorna UTC, JavaScript Date converte automaticamente para timezone local
+            console.group("🔍 DEBUG - selectCompetition");
+            console.log("📅 Date object recebido:");
+            console.log(`   startTime (toString): ${competition.startTime.toString()}`);
+            console.log(`   startTime (toISOString): ${competition.startTime.toISOString()}`);
+            console.log(`   Timezone offset: ${competition.startTime.getTimezoneOffset()} minutos`);
+            
+            const year = competition.startTime.getFullYear();
+            const month = String(competition.startTime.getMonth() + 1).padStart(2, '0');
+            const day = String(competition.startTime.getDate()).padStart(2, '0');
+            const hours = String(competition.startTime.getHours()).padStart(2, '0');
+            const minutes = String(competition.startTime.getMinutes()).padStart(2, '0');
+            
+            console.log("\n📤 Valores extraídos (LOCAL):");
+            console.log(`   Data: ${year}-${month}-${day}`);
+            console.log(`   Hora: ${hours}:${minutes}`);
+            console.groupEnd();
+            
             setValue(
                 "startDate",
-                competition.startTime.toISOString().split("T")[0],
+                `${year}-${month}-${day}`, // Data local
                 {
                     shouldValidate: false,
                     shouldDirty: false,
@@ -212,10 +232,7 @@ const useCreateCompetition = () => {
             );
             setValue(
                 "startTime",
-                competition.startTime
-                    .toISOString()
-                    .split("T")[1]
-                    .substring(0, 5),
+                `${hours}:${minutes}`, // Hora local
                 {
                     shouldValidate: false,
                     shouldDirty: false,
@@ -275,13 +292,15 @@ const useCreateCompetition = () => {
             let errored = false;
 
             try {
+                // Criar Date no horário local do usuário e converter para UTC
+                const localDateTime = new Date(`${data.startDate}T${data.startTime.split(".")[0]}:00`);
+                const startTimeUTC = localDateTime.toISOString();
+
                 const payload: UpdateCompetitionRequest = {
                     id: activeCompetition.id,
                     name: activeCompetition.name,
                     description: data.description,
-                    startTime: new Date(
-                        `${data.startDate}T${data.startTime.split(".")[0]}`
-                    ).toISOString(),
+                    startTime: startTimeUTC,
                     duration: convertNumberToTimeSpan(data.duration * 60),
                     blockSubmissions: convertNumberToTimeSpan(
                         data.stopAnswering * 60
@@ -301,6 +320,16 @@ const useCreateCompetition = () => {
                         activeCompetition.endInscriptions!.toISOString(),
                     maxMembers: activeCompetition.maxMembers!,
                 };
+
+                console.group("🔍 DEBUG - Criar Competição");
+                console.log("📅 Dados do Formulário (horário LOCAL):");
+                console.log(`   Data: ${data.startDate}`);
+                console.log(`   Hora: ${data.startTime}`);
+                console.log(`   Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
+                console.log("\n📤 Enviando para Backend (UTC):");
+                console.log(`   startTime: ${payload.startTime}`);
+                console.log(`   Horário local: ${localDateTime.toLocaleString('pt-BR')}`);
+                console.groupEnd();
 
                 await updateTemplateCompetition(payload);
 

@@ -58,7 +58,7 @@ const useLoadUsers = (role: UserRole) => {
                 const controller = new AbortController();
                 setControllerSignal(controller);
 
-                const response = await UserService.GetUsers(
+                const response = await UserService.GetUsersWithSignal(
                     currentPage,
                     10,
                     searchTerm,
@@ -91,14 +91,16 @@ const useLoadUsers = (role: UserRole) => {
 
     const deleteUser = useCallback(
         async (id: string) => {
-            try {
-                await UserService.deleteUser(id);
-                setUsers((prev) => prev.filter((user) => user.id !== id));
-            } catch (error) {
-                console.error("Error deleting user:", error);
+            const response = await UserService.deleteUser(id);
+            
+            if (response.status !== 200) {
+                throw new Error("Falha ao excluir o usuário.");
             }
+            
+            // Remove da lista local apenas se a exclusão no backend foi bem-sucedida
+            setUsers((prev) => prev.filter((user) => user.id !== id));
         },
-        [setUsers]
+        []
     );
 
     const updateUser = useCallback(

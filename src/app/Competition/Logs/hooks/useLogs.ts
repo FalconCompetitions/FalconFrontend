@@ -4,25 +4,21 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useCompetitionHub } from "@/contexts/CompetitionHubContext";
 import type { LogResponse } from "@/types/SignalR";
 
-export interface TeamData {
+/**
+ * Represents a single log entry for display in the table.
+ */
+export interface LogData {
+    id: number;
     teamName: string;
+    userName: string;
     ip: string;
-    lastLogin: string;
-    lastLogout: string;
-    members: string;
-    lastActionTime: string;
-    lastAction: string;
+    actionTime: string;
+    action: string;
+    actionType: number;
 }
 
 interface Column {
-    id:
-        | "teamName"
-        | "ip"
-        | "lastLogin"
-        | "lastLogout"
-        | "members"
-        | "lastActionTime"
-        | "lastAction";
+    id: keyof LogData;
     label: string;
     minWidth?: number;
     align?: "right" | "left" | "center";
@@ -30,151 +26,64 @@ interface Column {
 }
 
 const columns: readonly Column[] = [
-    { id: "teamName", label: "Team Name", minWidth: 150, align: "center" },
-    { id: "ip", label: "IP", minWidth: 100, align: "center" },
-    {
-        id: "lastLogin",
-        label: "Last Login",
-        minWidth: 170,
-        align: "center",
-    },
-    {
-        id: "lastLogout",
-        label: "Last Logout",
-        minWidth: 170,
-        align: "center",
-    },
-    {
-        id: "lastActionTime",
-        label: "Hora Última Ação",
-        minWidth: 180,
-        align: "center",
-    },
-    {
-        id: "lastAction",
-        label: "Última Ação",
-        minWidth: 250,
-        align: "center",
-    },
-    { id: "members", label: "Integrantes", minWidth: 170, align: "center" },
+    { id: "actionTime", label: "Data/Hora", minWidth: 180, align: "center" },
+    { id: "teamName", label: "Equipe", minWidth: 150, align: "center" },
+    { id: "userName", label: "Usuário", minWidth: 150, align: "center" },
+    { id: "action", label: "Ação", minWidth: 300, align: "left" },
+    { id: "ip", label: "IP", minWidth: 130, align: "center" },
 ];
 
-// Helper to format action type
-const getActionDescription = (actionType: number): string => {
-    const actions: { [key: number]: string } = {
-        0: "Login",
-        1: "Logout",
-        2: "Submissão de Exercício",
-        3: "Pergunta Enviada",
-        4: "Resposta Dada",
-        5: "Grupo Bloqueado",
-        6: "Grupo Desbloqueado",
-    };
-    return actions[actionType] || "Ação Desconhecida";
-};
-
+/**
+ * Hook for managing competition logs display.
+ * Shows all individual log entries with human-readable descriptions.
+ */
 const useLogs = () => {
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [logs, setLogs] = useState<LogResponse[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const { requestLogs, isConnected, ongoingCompetition } =
         useCompetitionHub();
 
     // Load logs when connected and competition is available
     useEffect(() => {
         if (isConnected && ongoingCompetition) {
-            requestLogs().then((fetchedLogs) => {
-                setLogs(fetchedLogs);
-            });
+            setIsLoading(true);
+            requestLogs()
+                .then((fetchedLogs) => {
+                    setLogs(fetchedLogs);
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
+        } else if (!isConnected) {
+            setIsLoading(false);
         }
     }, [isConnected, ongoingCompetition, requestLogs]);
 
-    // Transform logs into TeamData format for the table
-    const rows = useMemo((): TeamData[] => {
-        // Group logs by groupId to aggregate information
-        const groupMap = new Map<
-            number,
-            {
-                groupId: number;
-                ip: string;
-                lastLogin?: string;
-                lastLogout?: string;
-                lastActionTime: string;
-                lastAction: string;
-                members: string; // We'll populate this from group data if available
-            }
-        >();
-
-        logs.forEach((log) => {
-            if (log.groupId) {
-                const existing = groupMap.get(log.groupId);
-                const actionTime = new Date(log.actionTime).toLocaleString(
-                    "pt-BR"
-                );
-                const actionDesc = getActionDescription(log.actionType);
-
-                if (!existing) {
-                    groupMap.set(log.groupId, {
-                        groupId: log.groupId,
-                        ip: log.ipAddress,
-                        lastLogin:
-                            log.actionType === 0 ? actionTime : undefined,
-                        lastLogout:
-                            log.actionType === 1 ? actionTime : undefined,
-                        lastActionTime: actionTime,
-                        lastAction: actionDesc,
-                        members: "Carregando...", // Will be filled from competition data
-                    });
-                } else {
-                    // Update with latest information
-                    if (
-                        log.actionType === 0 &&
-                        (!existing.lastLogin ||
-                            new Date(log.actionTime) >
-                                new Date(existing.lastLogin))
-                    ) {
-                        existing.lastLogin = actionTime;
-                    }
-                    if (
-                        log.actionType === 1 &&
-                        (!existing.lastLogout ||
-                            new Date(log.actionTime) >
-                                new Date(existing.lastLogout))
-                    ) {
-                        existing.lastLogout = actionTime;
-                    }
-                    // Always update to latest action
-                    if (
-                        new Date(log.actionTime) >
-                        new Date(existing.lastActionTime)
-                    ) {
-                        existing.lastActionTime = actionTime;
-                        existing.lastAction = actionDesc;
-                    }
-                }
-            }
-        });
-
-        // Convert map to array and get group names from competition data
-        return Array.from(groupMap.values()).map((groupData) => {
-            const group = ongoingCompetition?.competitionRankings?.find(
-                (r) => r.group.id === groupData.groupId
-            );
-            const groupName = group?.group.name || `Grupo ${groupData.groupId}`;
-            const members =
-                group?.group.users?.map((u) => u.name).join(", ") || "N/A";
+    // Transform logs into LogData format for the table
+    const rows = useMemo((): LogData[] => {
+        return logs.map((log) => {
+            const actionTime = new Date(log.actionTime).toLocaleString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
 
             return {
-                teamName: groupName,
-                ip: groupData.ip,
-                lastLogin: groupData.lastLogin || "N/A",
-                lastLogout: groupData.lastLogout || "N/A",
-                members: members,
-                lastActionTime: groupData.lastActionTime,
-                lastAction: groupData.lastAction,
+                id: log.id,
+                teamName: log.groupName || "N/A",
+                userName: log.userName || "N/A",
+                ip: log.ipAddress || "N/A",
+                actionTime: actionTime,
+                action: log.actionDescription || getActionDescription(log.actionType, log.userName, log.groupName),
+                actionType: log.actionType,
             };
         });
-    }, [logs, ongoingCompetition]);
+    }, [logs]);
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -194,7 +103,32 @@ const useLogs = () => {
         handleChangeRowsPerPage,
         rows,
         columns,
+        isLoading,
     };
+};
+
+/**
+ * Helper to get action description from action type (fallback).
+ * This should match the backend LogType enum values.
+ */
+const getActionDescription = (actionType: number, userName?: string | null, groupName?: string | null): string => {
+    const user = userName || "Usuário";
+    const group = groupName || "Grupo";
+
+    const actions: { [key: number]: string } = {
+        0: `${user} realizou uma ação`,           // UserAction
+        1: "Ação do sistema",                      // SystemAction
+        2: `${user} (${group}) entrou na competição`,  // Login
+        3: `${user} (${group}) saiu da competição`,    // Logout
+        4: `${group} enviou uma submissão de exercício`, // SubmittedExercise
+        5: `${group} foi bloqueado na competição`,     // GroupBlockedInCompetition
+        6: `${group} foi desbloqueado na competição`,  // GroupUnblockedInCompetition
+        7: `${group} enviou uma pergunta`,             // QuestionSent
+        8: `Pergunta de ${group} foi respondida`,      // AnswerGiven
+        9: "Configurações da competição foram atualizadas", // CompetitionUpdated
+        10: "Competição foi finalizada manualmente",   // CompetitionFinished
+    };
+    return actions[actionType] || "Ação desconhecida";
 };
 
 export default useLogs;

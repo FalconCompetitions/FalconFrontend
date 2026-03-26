@@ -89,14 +89,17 @@ const useTeachersTable = () => {
         try {
             await Promise.all(selectedUsers.map((id) => deleteUser(id)));
             setSelectedUsers([]);
-            enqueueSnackbar("Usuários deletados com sucesso!", {
+            const message = selectedUsers.length === 1
+                ? "Professor excluído com sucesso!"
+                : `${selectedUsers.length} professores excluídos com sucesso!`;
+            enqueueSnackbar(message, {
                 variant: "success",
                 autoHideDuration: 2500,
                 anchorOrigin: { vertical: "bottom", horizontal: "right" },
             });
         } catch (error) {
             console.error("Error deleting users:", error);
-            enqueueSnackbar("Erro ao deletar usuários.", {
+            enqueueSnackbar("Erro ao deletar professores.", {
                 variant: "error",
                 autoHideDuration: 2500,
                 anchorOrigin: { vertical: "bottom", horizontal: "right" },
@@ -106,6 +109,24 @@ const useTeachersTable = () => {
 
     const handleDeleteUserClick = useCallback(
         (user: GenericUserInfo) => {
+            const action = async (userId: string) => {
+                try {
+                    await deleteUser(userId);
+                    enqueueSnackbar("Professor excluído com sucesso!", {
+                        variant: "success",
+                        autoHideDuration: 2500,
+                        anchorOrigin: { vertical: "bottom", horizontal: "right" },
+                    });
+                } catch (error) {
+                    console.error("Error deleting user:", error);
+                    enqueueSnackbar("Erro ao excluir professor.", {
+                        variant: "error",
+                        autoHideDuration: 2500,
+                        anchorOrigin: { vertical: "bottom", horizontal: "right" },
+                    });
+                }
+            };
+            
             setDeleteDialog({
                 isOpen: true,
                 toggleDialog: () =>
@@ -114,10 +135,10 @@ const useTeachersTable = () => {
                         isOpen: !prev.isOpen,
                     })),
                 user: user,
-                action: deleteUser,
+                action: action,
             });
         },
-        [deleteUser]
+        [deleteUser, enqueueSnackbar]
     );
 
     const handleSelectUserToEdit = useCallback(

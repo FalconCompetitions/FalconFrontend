@@ -4,6 +4,31 @@ import { Exercise, ExerciseType } from "@/types/Exercise";
 import { ServerSideResponse } from "@/types/Global";
 import { NextRequest, NextResponse } from "next/server";
 
+/**
+ * Handles DELETE requests to permanently delete an exercise.
+ *
+ * @param req - The incoming Next.js request object.
+ * @param params - Route parameters containing the exercise ID.
+ * @returns A JSON response confirming the deletion.
+ *
+ * @remarks
+ * **URL Parameter:**
+ * - `id` (string): The unique identifier of the exercise to delete
+ *
+ * **Request:** No request body required. User authenticated via cookies.
+ *
+ * **Success Response (200):**
+ * ```json
+ * {
+ *   "status": 200
+ * }
+ * ```
+ *
+ * **Error Response (500):**
+ * - Server error when deleting exercise
+ * - Exercise not found
+ * - Exercise is being used in active competitions
+ */
 export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -25,9 +50,52 @@ export async function DELETE(
         );
     }
 
-    return NextResponse.json(res.data, { status: res.status });
+    return NextResponse.json(
+        { status: res.status, data: undefined } satisfies ServerSideResponse<void>,
+        { status: res.status }
+    );
 }
 
+/**
+ * Handles PUT requests to update an existing exercise.
+ *
+ * This endpoint accepts multipart/form-data to update exercise metadata and optionally a new PDF file.
+ *
+ * @param req - The incoming Next.js request object containing the form data.
+ * @param params - Route parameters containing the exercise ID.
+ * @returns A JSON response containing the updated exercise data.
+ *
+ * @remarks
+ * **URL Parameter:**
+ * - `id` (string): The unique identifier of the exercise to update
+ *
+ * **Request Body (multipart/form-data):**
+ * - `title` (string): Exercise title
+ * - `exerciseTypeId` (number): Type of exercise (0=Algorithm, 1=DataStructure, etc.)
+ * - `description` (string): Exercise description
+ * - `estimatedTime` (number): Estimated time to complete in minutes
+ * - `judgeUuid` (string): UUID of the judge system to use
+ * - `inputs` (JSON string): Array of test case inputs
+ * - `outputs` (JSON string): Array of expected outputs
+ * - `pdfFile` (File, optional): New PDF file containing the exercise statement
+ *
+ * **Success Response (200):**
+ * ```json
+ * {
+ *   "status": 200,
+ *   "data": {
+ *     "id": number,
+ *     "title": "string",
+ *     "description": "string",
+ *     ...updated exercise details...
+ *   }
+ * }
+ * ```
+ *
+ * **Error Response (500):**
+ * - Server error when updating exercise
+ * - Exercise not found
+ */
 export async function PUT(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -48,8 +116,12 @@ export async function PUT(
 
     const backendPayload = new FormData();
 
-    if (formData.has("pdfFile") && formData.get("pdfFile") instanceof File) {
-        backendPayload.append("file", formData.get("pdfFile") as File);
+    // Only append file if it's a valid file with content
+    if (formData.has("pdfFile")) {
+        const file = formData.get("pdfFile");
+        if (file instanceof File && file.size > 0 && file.name) {
+            backendPayload.append("file", file);
+        }
     }
 
     backendPayload.append("metadata", JSON.stringify(metadataPayload));

@@ -91,6 +91,11 @@ export interface EditExerciseOutputRequest {
     exerciseId: number;
 
     /**
+     * UUID of the judge associated with the exercise.
+     */
+    judgeUuid?: string | null;
+
+    /**
      * Identifier of the input used for this exercise output.
      */
     exerciseInputId: number | null;
@@ -119,6 +124,11 @@ export interface EditExerciseInputRequest {
      * Identifier of the exercise associated with this input.
      */
     exerciseId: number;
+
+    /**
+     * UUID of the judge associated with the exercise.
+     */
+    judgeUuid?: string | null;
 
     /**
      * The orderId of the input within the exercise.

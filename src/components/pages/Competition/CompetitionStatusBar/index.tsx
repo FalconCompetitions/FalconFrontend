@@ -34,8 +34,10 @@ import {
     FaTrophy, 
     FaExclamationTriangle,
     FaCode,
-    FaHourglassHalf
+    FaHourglassHalf,
+    FaSyncAlt
 } from "react-icons/fa";
+import { formatDateWithoutTimezone } from "@/libs/utils";
 
 /**
  * Competition Status Bar - Shows real-time competition status, timer, and info.
@@ -52,7 +54,7 @@ export const CompetitionStatusBar: React.FC = () => {
         timeRemaining,
     } = useCompetitionStatus();
 
-    const [, setCurrentTime] = useState(new Date());
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     // Update timer every second for smooth countdown
     useEffect(() => {
@@ -67,9 +69,19 @@ export const CompetitionStatusBar: React.FC = () => {
         return (
             <div className="bg-red-100 border-b border-red-300 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 py-3">
-                    <div className="flex items-center justify-center gap-2 text-red-800">
-                        <FaExclamationTriangle className="w-5 h-5 animate-pulse" />
-                        <span className="font-medium">⚠️ Desconectado do servidor. Tentando reconectar...</span>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-red-800">
+                        <div className="flex items-center gap-2">
+                            <FaExclamationTriangle className="w-5 h-5 animate-pulse" />
+                            <span className="font-medium text-sm sm:text-base">⚠️ Desconectado do servidor. Tentando reconectar...</span>
+                        </div>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 transition-colors flex items-center gap-2 font-medium shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            aria-label="Recarregar página"
+                        >
+                            <FaSyncAlt className="w-4 h-4" />
+                            Recarregar
+                        </button>
                     </div>
                 </div>
             </div>
@@ -114,6 +126,24 @@ export const CompetitionStatusBar: React.FC = () => {
 
     const statusBadge = getStatusBadge();
 
+    // Calculate timer urgency level
+    const getTimerUrgency = () => {
+        if (!timeRemaining) return "ended";
+        const totalSeconds = timeRemaining.hours * 3600 + timeRemaining.minutes * 60 + timeRemaining.seconds;
+        if (totalSeconds <= 5 * 60) return "critical"; // <= 5 minutes
+        if (totalSeconds <= 10 * 60) return "warning"; // <= 10 minutes
+        return "normal";
+    };
+
+    const timerUrgency = getTimerUrgency();
+    
+    const timerStyles = {
+        critical: "bg-red-600 text-white animate-pulse",
+        warning: "bg-orange-500 text-white",
+        normal: "bg-[#4F85A6] text-white",
+        ended: "bg-gray-400 text-white"
+    };
+
     return (
         <div className="bg-white border-b border-gray-200 shadow-md">
             <div className="max-w-7xl mx-auto px-4 py-3">
@@ -157,12 +187,14 @@ export const CompetitionStatusBar: React.FC = () => {
                 {/* Info Cards Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {/* Timer Card */}
-                    <div className="flex items-center gap-3 p-3 bg-[#4F85A6] text-white rounded-lg shadow">
-                        <FaClock className="w-5 h-5" />
+                    <div className={`flex items-center gap-3 p-3 rounded-lg shadow transition-colors ${timerStyles[timerUrgency]}`}>
+                        <FaClock className={`w-5 h-5 ${timerUrgency === 'critical' ? 'animate-bounce' : ''}`} />
                         <div>
-                            <p className="text-xs font-light opacity-90">Tempo Restante</p>
+                            <p className="text-xs font-light opacity-90">
+                                {timerUrgency === 'critical' ? '⚠️ Tempo Restante' : 'Tempo Restante'}
+                            </p>
                             {timeRemaining ? (
-                                <p className="text-lg font-bold font-mono">
+                                <p className={`text-lg font-bold font-mono ${timerUrgency === 'critical' ? 'text-xl' : ''}`}>
                                     {timeRemaining.hours.toString().padStart(2, "0")}:
                                     {timeRemaining.minutes.toString().padStart(2, "0")}:
                                     {timeRemaining.seconds.toString().padStart(2, "0")}
@@ -221,7 +253,7 @@ export const CompetitionStatusBar: React.FC = () => {
                         <p className="text-sm text-red-800 text-center font-medium">
                             ⏰ Competição encerrada em{" "}
                             {ongoingCompetition!.endTime 
-                                ? new Date(ongoingCompetition!.endTime).toLocaleString("pt-BR")
+                                ? formatDateWithoutTimezone(ongoingCompetition!.endTime.toString())
                                 : "data desconhecida"
                             }
                         </p>

@@ -1,51 +1,107 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useMemo, useCallback } from "react";
 import { useCompetition } from "@/contexts/CompetitionContext";
 import { CreateCompetitionRequest } from "@/types/Competition/Requests";
-
-interface CompetitionFormData {
-    name: string;
-    description: string;
-    maxMembers: number;
-    initialDate: string;
-    initialRegistration: string;
-    endRegistration: string;
-    status: string;
-}
 
 export const useCompetitionForm = () => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [maxMembers, setMaxMembers] = useState("3");
+
     const [initialDate, setInitialDate] = useState("");
+    const [initialDateTime, setInitialDateTime] = useState("");
+
     const [initialRegistration, setInitialRegistration] = useState("");
+    const [initialRegistrationTime, setInitialRegistrationTime] = useState("");
+
     const [endRegistration, setEndRegistration] = useState("");
+    const [endRegistrationTime, setEndRegistrationTime] = useState("");
+
     const [status, setStatus] = useState("Fechado");
 
     const { createCompetition } = useCompetition();
+
+    const isStartAfterEnd = useMemo(() => {
+        if (
+            !initialRegistration ||
+            !initialRegistrationTime ||
+            !endRegistration ||
+            !endRegistrationTime
+        ) {
+            return false;
+        }
+        const start = new Date(
+            `${initialRegistration}T${initialRegistrationTime}`
+        );
+        const end = new Date(`${endRegistration}T${endRegistrationTime}`);
+        return start > end;
+    }, [
+        initialRegistration,
+        initialRegistrationTime,
+        endRegistration,
+        endRegistrationTime,
+    ]);
+
+    const isEndAfterMarathon = useMemo(() => {
+        if (
+            !endRegistration ||
+            !endRegistrationTime ||
+            !initialDate ||
+            !initialDateTime
+        ) {
+            return false;
+        }
+        const end = new Date(`${endRegistration}T${endRegistrationTime}`);
+        const marathon = new Date(`${initialDate}T${initialDateTime}`);
+        return end > marathon;
+    }, [endRegistration, endRegistrationTime, initialDate, initialDateTime]);
+
+    const hasDateErrors = isStartAfterEnd || isEndAfterMarathon;
 
     const handleSubmit = useCallback(
         async (e: React.FormEvent) => {
             e.preventDefault();
 
+            if (hasDateErrors) return;
+
             try {
+                // Criar Dates no horário local e converter para UTC
+                const startTimeLocal = new Date(`${initialDate}T${initialDateTime}:00`);
+                const startInscriptionsLocal = new Date(`${initialRegistration}T${initialRegistrationTime}:00`);
+                const endInscriptionsLocal = new Date(`${endRegistration}T${endRegistrationTime}:00`);
+
+                console.group("🔍 DEBUG - CreateSubscription");
+                console.log("📅 Input do usuário (LOCAL):");
+                console.log(`   startTime: ${initialDate} ${initialDateTime}`);
+                console.log(`   Date object: ${startTimeLocal.toString()}`);
+                console.log(`   Timezone offset: ${startTimeLocal.getTimezoneOffset()} minutos`);
+                console.log("\n📤 Enviando para backend (UTC):");
+                
+                const startTimeISO = startTimeLocal.toISOString();
+                const startInscriptionsISO = startInscriptionsLocal.toISOString();
+                const endInscriptionsISO = endInscriptionsLocal.toISOString();
+                
+                console.log(`   startTime: ${startTimeISO}`);
+                console.log(`   startInscriptions: ${startInscriptionsISO}`);
+                console.log(`   endInscriptions: ${endInscriptionsISO}`);
+                console.groupEnd();
+
                 const dataCompetition: CreateCompetitionRequest = {
                     name,
                     description,
                     maxMembers: Number(maxMembers),
-                    startTime: initialDate,
-                    startInscriptions: initialRegistration,
-                    endInscriptions: endRegistration,
-                    duration: "00:00:00",
-                    stopRanking: null,
+                    startTime: startTimeISO,
+                    startInscriptions: startInscriptionsISO,
+                    endInscriptions: endInscriptionsISO,
+                    duration: "01:30:00",
+                    stopRanking: "01:20:00",
                     submissionPenalty: "00:20:00",
                     maxExercises: null,
                     maxSubmissionSize: 20,
                     exerciseIds: [],
-                    blockSubmissions: null,
+                    blockSubmissions: "01:25:00",
                 };
 
                 await createCompetition(dataCompetition);
@@ -58,9 +114,13 @@ export const useCompetitionForm = () => {
             description,
             maxMembers,
             initialDate,
+            initialDateTime,
             initialRegistration,
+            initialRegistrationTime,
             endRegistration,
+            endRegistrationTime,
             createCompetition,
+            hasDateErrors,
         ]
     );
 
@@ -69,10 +129,24 @@ export const useCompetitionForm = () => {
             name &&
             description &&
             initialDate &&
+            initialDateTime &&
             initialRegistration &&
-            endRegistration
+            initialRegistrationTime &&
+            endRegistration &&
+            endRegistrationTime &&
+            !hasDateErrors
         );
-    }, [name, description, initialDate, initialRegistration, endRegistration]);
+    }, [
+        name,
+        description,
+        initialDate,
+        initialDateTime,
+        initialRegistration,
+        initialRegistrationTime,
+        endRegistration,
+        endRegistrationTime,
+        hasDateErrors,
+    ]);
 
     return {
         name,
@@ -83,13 +157,21 @@ export const useCompetitionForm = () => {
         setMaxMembers,
         initialDate,
         setInitialDate,
+        initialDateTime,
+        setInitialDateTime,
         initialRegistration,
         setInitialRegistration,
+        initialRegistrationTime,
+        setInitialRegistrationTime,
         endRegistration,
         setEndRegistration,
+        endRegistrationTime,
+        setEndRegistrationTime,
         status,
         setStatus,
         handleSubmit,
         isFormValid,
+        isStartAfterEnd,
+        isEndAfterMarathon,
     };
 };

@@ -25,24 +25,14 @@ const useDeleteDialog = ({ onDelete, onClose, toggleDialog }: UseDeleteDialogPro
         try {
             setLoading(true);
             await onDelete();
-            enqueueSnackbar("Deletado com sucesso!", {
-                variant: "success",
-                autoHideDuration: 2500,
-                anchorOrigin: { vertical: "bottom", horizontal: "right" },
-            });
             toggleDialog();
             // @ts-expect-error : Irrelevant
         } catch (err: Error) {
             setError(err?.message || "Erro ao deletar.");
-            enqueueSnackbar("Erro ao deletar.", {
-                variant: "error",
-                autoHideDuration: 2500,
-                anchorOrigin: { vertical: "bottom", horizontal: "right" },
-            });
         } finally {
             setLoading(false);
         }
-    }, [enqueueSnackbar, onDelete, toggleDialog]);
+    }, [onDelete, toggleDialog]);
 
     return {
         loading,

@@ -5,6 +5,45 @@ import { Exercise, ExerciseType } from "@/types/Exercise";
 import { ServerSideResponse } from "@/types/Global";
 import { NextRequest, NextResponse } from "next/server";
 
+/**
+ * Handles GET requests to retrieve a paginated list of exercises.
+ *
+ * @param req - The incoming Next.js request object with query parameters.
+ * @returns A JSON response containing paginated exercises.
+ *
+ * @remarks
+ * **Query Parameters:**
+ * - `page` (number, default: 1): Page number to retrieve
+ * - `pageSize` (number, default: 10): Number of exercises per page
+ * - `search` (string, default: ""): Search term to filter exercises by title or description
+ * - `exerciseType` (ExerciseType | null): Filter by exercise type (0=Algorithm, 1=DataStructure, etc.)
+ *
+ * **Success Response (200):**
+ * ```json
+ * {
+ *   "status": 200,
+ *   "data": {
+ *     "items": [
+ *       {
+ *         "id": number,
+ *         "title": "string",
+ *         "description": "string",
+ *         "exerciseTypeId": number,
+ *         "estimatedTime": number,
+ *         "judgeUuid": "string",
+ *         ...exercise details...
+ *       }
+ *     ],
+ *     "totalCount": number,
+ *     "page": number,
+ *     "pageSize": number
+ *   }
+ * }
+ * ```
+ *
+ * **Error Response:**
+ * - 500: Server error when fetching exercises
+ */
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = Number(searchParams.get("page")) || 1;
@@ -20,9 +59,10 @@ export async function GET(req: NextRequest) {
             cookies: req.cookies.toString(),
         });
     } catch (exc) {
+        const statusCode = (exc as any).response?.status || 500;
         return NextResponse.json(
-            { message: "Erro ao buscar exercícios.", status: 500 },
-            { status: 500 }
+            { message: "Erro ao buscar exercícios.", status: statusCode },
+            { status: statusCode }
         );
     }
 
@@ -35,6 +75,42 @@ export async function GET(req: NextRequest) {
     );
 }
 
+/**
+ * Handles POST requests to create a new exercise.
+ *
+ * This endpoint accepts multipart/form-data containing exercise metadata and a PDF file.
+ *
+ * @param req - The incoming Next.js request object containing the form data.
+ * @returns A JSON response containing the created exercise data.
+ *
+ * @remarks
+ * **Request Body (multipart/form-data):**
+ * - `title` (string): Exercise title
+ * - `exerciseTypeId` (number): Type of exercise (0=Algorithm, 1=DataStructure, etc.)
+ * - `description` (string): Exercise description
+ * - `estimatedTime` (number): Estimated time to complete in minutes
+ * - `judgeUuid` (string): UUID of the judge system to use
+ * - `inputs` (JSON string): Array of test case inputs
+ * - `outputs` (JSON string): Array of expected outputs
+ * - `pdfFile` (File): PDF file containing the exercise statement
+ *
+ * **Success Response (201):**
+ * ```json
+ * {
+ *   "status": 201,
+ *   "data": {
+ *     "id": number,
+ *     "title": "string",
+ *     "description": "string",
+ *     ...created exercise details...
+ *   }
+ * }
+ * ```
+ *
+ * **Error Response (500):**
+ * - Server error when creating exercise
+ * - Invalid test cases format
+ */
 export async function POST(req: NextRequest) {
     const formData = await req.formData();
 

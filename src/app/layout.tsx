@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import { UserContextProvider } from "@/contexts/UserContext";
 import SnackbarProviderC from "@/contexts/SnackbarProvider";
@@ -8,6 +9,7 @@ import { WebSocketContextProvider } from "@/contexts/WebSocketContext";
 
 import NavbarWrapper from "@/components/_ui/NavbarWrapper";
 import { CompetitionHubProvider } from "@/contexts/CompetitionHubContext";
+import NavigationProgress from "@/components/_ui/NavigationProgress";
 
 export const metadata: Metadata = {
     title: "Falcon",
@@ -28,6 +30,9 @@ export default function RootLayout({
                             <WebSocketContextProvider>
                                 <CompetitionContextProvider>
                                     <CompetitionHubProvider>
+                                        <Suspense fallback={null}>
+                                            <NavigationProgress />
+                                        </Suspense>
                                         <NavbarWrapper />
 
                                         {children}

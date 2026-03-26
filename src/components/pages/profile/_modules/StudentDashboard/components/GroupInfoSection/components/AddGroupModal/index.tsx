@@ -23,6 +23,7 @@ const AddGroupModal = ({ onClose }: AddGroupModalProps) => {
         isLoading,
         handleSubmitError,
         handleSubmitForm,
+        formError,
     } = useAddGroup(onClose);
 
     // Wrapper to prevent native form submit reload and delegate to react-hook-form
@@ -41,6 +42,11 @@ const AddGroupModal = ({ onClose }: AddGroupModalProps) => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {formError && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+                                {formError}
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <Label htmlFor="groupName">Nome do Grupo</Label>
                             <Controller

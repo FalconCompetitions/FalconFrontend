@@ -14,6 +14,27 @@ export enum JudgeResponseEnum {
 }
 
 /**
+ * Maps JudgeResponseEnum to user-friendly Portuguese messages.
+ */
+export const JudgeResponseMessages: Record<JudgeResponseEnum, string> = {
+    [JudgeResponseEnum.Accepted]: "Resposta aceita",
+    [JudgeResponseEnum.WrongAnswer]: "Resposta incorreta",
+    [JudgeResponseEnum.RuntimeError]: "Erro de execução",
+    [JudgeResponseEnum.CompilationError]: "Erro de compilação",
+    [JudgeResponseEnum.PresentationError]: "Erro de apresentação",
+    [JudgeResponseEnum.TimeLimitExceeded]: "Tempo limite excedido",
+    [JudgeResponseEnum.MemoryLimitExceeded]: "Memória limite excedida",
+    [JudgeResponseEnum.SecurityError]: "Erro de segurança",
+};
+
+/**
+ * Gets the user-friendly message for a judge response.
+ */
+export function getJudgeResponseMessage(response: JudgeResponseEnum): string {
+    return JudgeResponseMessages[response] ?? "Resposta desconhecida";
+}
+
+/**
  * Represents the output generated for a specific exercise input by the judge system.
  */
 export interface ExerciseOutput {

@@ -171,11 +171,32 @@ npm run lint
 ### Other
 - **notistack** 3.0.2 - Snackbar notifications
 - **jsonwebtoken** 9.0.2 - JWT token handling
+- **nprogress** 1.0.0+ - Page transition progress bar
+
+## Loading System
+The application features a comprehensive loading system for optimal user experience:
+
+- **Hierarchical loading.tsx files** - Context-aware loading states for different sections (Auth, Profile, Competition, Exercise)
+- **NavigationProgress component** - Top progress bar with NProgress for instant navigation feedback
+- **Custom Loading component** - Multiple variants (spinner, dots, bar, overlay) for different use cases
+- **Consistent theming** - Loading states match the application's color scheme (#4F85A6, #3f3c40)
+
+For detailed information, see [Loading System Documentation](LOADING_SYSTEM.md) and [Usage Examples](src/examples/loading-examples.tsx).
 
 ## Documentation
-- [SignalR Frontend Implementation](docs/SIGNALR_FRONTEND_IMPLEMENTATION.md)
-- [SignalR Issues and Gaps](docs/SIGNALR_ISSUES_AND_GAPS.md)
-- [Competition Status Bar](docs/COMPETITION_STATUS_BAR.md)
+Complete documentation is available in the [documentation/](documentation/) folder, organized by category:
+
+### Architecture & Integrations
+- [SignalR Competition Hub Documentation](documentation/architecture/SIGNALR_COMPETITION_HUB_DOCUMENTATION.md)
+- [SignalR Frontend Implementation](documentation/architecture/SIGNALR_FRONTEND_IMPLEMENTATION.md)
+- [SignalR Issues and Gaps](documentation/architecture/SIGNALR_ISSUES_AND_GAPS.md)
+
+### Features & Components
+- [Loading System](documentation/features/LOADING_SYSTEM.md)
+- [Competition Status Bar](documentation/features/COMPETITION_STATUS_BAR.md)
+
+### Development
 - [Copilot Instructions](.github/copilot-instructions.md)
+- [Code Examples](src/examples/)
 
 

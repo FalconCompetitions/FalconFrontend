@@ -1,6 +1,18 @@
 .button {
     @apply flex text-center gap-1 justify-center items-center px-6 py-2 shadow-md transition-all duration-200 hover:shadow-lg relative;
 
+    /* Estados de foco para acessibilidade */
+    &:focus-visible {
+        @apply outline-none ring-2 ring-offset-2;
+        ring-color: var(--primary-bg-color);
+    }
+
+    /* Estado desabilitado */
+    &:disabled {
+        @apply opacity-50 cursor-not-allowed;
+        pointer-events: none;
+    }
+
     /*
     &::before {
         content: "";

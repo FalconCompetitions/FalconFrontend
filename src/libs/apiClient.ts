@@ -60,9 +60,8 @@ export async function apiRequest<T, X = unknown>(
         params: params,
         withCredentials: true,
         fetchOptions: {
-            referrerPolicy: "origin-when-cross-origin",
             credentials: "include",
-            next: { revalidate: false },
+            referrerPolicy: "origin-when-cross-origin",
         },
         headers: headers,
         signal: options.signal,

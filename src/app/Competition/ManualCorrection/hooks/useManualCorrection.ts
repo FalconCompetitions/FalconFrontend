@@ -23,12 +23,17 @@ const useManualCorrection = () => {
     const [feedback, setFeedback] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Load submissions from SignalR when connected
     useEffect(() => {
-        if (!isConnected) return;
+        if (!isConnected) {
+            setIsLoading(false);
+            return;
+        }
 
         const loadSubmissions = async () => {
+            setIsLoading(true);
             try {
                 const submissionsData = await requestSubmissions();
 
@@ -84,6 +89,8 @@ const useManualCorrection = () => {
                 setSubmissions(transformedSubmissions);
             } catch (error) {
                 console.error("Error loading submissions:", error);
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -245,6 +252,7 @@ const useManualCorrection = () => {
         handleOpenRejectDialog,
         handleCloseRejectDialog,
         handleConfirmReject,
+        isLoading,
     };
 };
 

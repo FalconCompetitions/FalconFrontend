@@ -2,14 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import type { CompetitionSubmissionData } from "@/types/SignalR";
-
-type ErrorType =
-    | "Compilation Error"
-    | "Runtime Error"
-    | "Resources Exceeded"
-    | "Time-limit Exceeded"
-    | "Presentation Error"
-    | "Wrong Answer";
+import { useCompetitionHub } from "@/contexts/CompetitionHubContext";
+import { JudgeResponseEnum, getJudgeResponseMessage } from "@/types/Exercise";
 
 interface Column {
     id: string;
@@ -30,7 +24,7 @@ interface WrongTeamData {
     time: string;
     exerciseDescription: string;
     teamName: string;
-    errorType: ErrorType;
+    errorType: string;
 }
 
 const correctColumns: readonly Column[] = [
@@ -58,28 +52,31 @@ const wrongColumns: readonly Column[] = [
 ];
 
 const useSubmissions = (currentTable: "correct" | "wrong") => {
-    const [submissions, setSubmissions] = useState<CompetitionSubmissionData[]>(
-        []
-    );
-    const [isConnected] = useState(true);
+    const [submissions, setSubmissions] = useState<CompetitionSubmissionData[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { requestSubmissions, isConnected } = useCompetitionHub();
 
-    // Mock data for demonstration
+    // Fetch submissions from the backend via SignalR
     useEffect(() => {
-        const mockSubmissions: CompetitionSubmissionData[] = [];
-        setSubmissions(mockSubmissions);
-    }, [isConnected]);
+        const fetchSubmissions = async () => {
+            if (!isConnected) {
+                setIsLoading(false);
+                return;
+            }
 
-    const getErrorType = (judgeResponse: number): ErrorType => {
-        const errorMap: Record<number, ErrorType> = {
-            1: "Wrong Answer",
-            2: "Time-limit Exceeded",
-            3: "Resources Exceeded",
-            4: "Runtime Error",
-            5: "Compilation Error",
-            6: "Presentation Error",
+            setIsLoading(true);
+            try {
+                const data = await requestSubmissions();
+                setSubmissions(data);
+            } catch (error) {
+                console.error("Error fetching submissions:", error);
+            } finally {
+                setIsLoading(false);
+            }
         };
-        return errorMap[judgeResponse] || "Runtime Error";
-    };
+
+        fetchSubmissions();
+    }, [isConnected, requestSubmissions]);
 
     const rows = useMemo(() => {
         if (currentTable === "correct") {
@@ -104,7 +101,7 @@ const useSubmissions = (currentTable: "correct" | "wrong") => {
                         s.exerciseName || "exercício"
                     }`,
                     teamName: s.group?.name || "Grupo desconhecido",
-                    errorType: getErrorType(s.judgeResponse),
+                    errorType: getJudgeResponseMessage(s.judgeResponse as JudgeResponseEnum),
                 }));
         }
     }, [currentTable, submissions]);
@@ -123,6 +120,7 @@ const useSubmissions = (currentTable: "correct" | "wrong") => {
         rows,
         displayedColumns,
         title,
+        isLoading,
     };
 };
 
