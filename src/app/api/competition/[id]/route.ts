@@ -1,6 +1,8 @@
 import { apiRequest } from "@/libs/apiClient";
 import { UpdateCompetitionRequest } from "@/types/Competition/Requests";
 import { UpdateCompetitionResponse } from "@/types/Competition/Responses";
+import { CompetitionDetail } from "@/types/Competition";
+
 import { Competition } from "@/types/Competition";
 import { ServerSideResponse } from "@/types/Global";
 import { NextRequest, NextResponse } from "next/server";

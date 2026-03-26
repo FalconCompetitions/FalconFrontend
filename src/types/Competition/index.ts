@@ -4,6 +4,33 @@ import { Log } from "../Log";
 import { Question } from "../Question";
 import { CompetitionRankingResponse } from "../SignalR";
 
+export interface CompetitionDetailUser {
+    id: string;
+    name: string;
+    email?: string;
+    ra?: string;
+    joinYear?: number;
+    department?: string;
+}
+
+export interface CompetitionDetailGroup {
+    id: number;
+    name: string;
+    leaderId: string;
+    users?: CompetitionDetailUser[];
+}
+
+export interface CompetitionDetail {
+    id: number;
+    name: string;
+    description?: string;
+    status: CompetitionStatus;
+    startTime: string;
+    endTime?: string;
+    groups?: CompetitionDetailGroup[];
+}
+
+
 /**
  * Status of the competition.
  * @remarks

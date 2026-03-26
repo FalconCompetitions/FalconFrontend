@@ -1,4 +1,5 @@
 import { apiRequest } from "@/libs/apiClient";
+
 import { NextRequest, NextResponse } from "next/server";
 import { ServerSideResponse } from "@/types/Global";
 import { Competition } from "@/types/Competition";
